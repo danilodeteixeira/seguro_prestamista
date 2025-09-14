@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Seguro de Vida - Início</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 50px;
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .header {
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+
+        .header p {
+            color: var(--dark-color);
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .option-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .option-card.individual {
+            border-color: var(--success-color);
+        }
+
+        .option-card.individual:hover {
+            border-color: var(--success-color);
+            background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%);
+        }
+
+        .option-card.coletivo {
+            border-color: var(--secondary-color);
+        }
+
+        .option-card.coletivo:hover {
+            border-color: var(--secondary-color);
+            background: linear-gradient(135deg, #f0f8ff 0%, #e0f0ff 100%);
+        }
+
+        .option-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .option-card.individual .option-icon {
+            color: var(--success-color);
+        }
+
+        .option-card.coletivo .option-icon {
+            color: var(--secondary-color);
+        }
+
+        .option-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .option-description {
+            color: var(--dark-color);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .features {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid var(--light-color);
+        }
+
+        .features h3 {
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .feature-item i {
+            color: var(--success-color);
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+
+        .feature-item span {
+            color: var(--dark-color);
+            font-weight: 500;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .options-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .option-card {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container fade-in">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-calculator me-3"></i>Calculadora de Seguro de Vida</h1>
+            <p>Escolha o tipo de cálculo que deseja realizar</p>
+        </div>
+
+        <!-- Opções de Cálculo -->
+        <div class="options-container">
+            <!-- Cálculo Individual -->
+            <a href="calculadora_individual.html" class="option-card individual">
+                <div class="option-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="option-title">Cálculo Individual</div>
+                <div class="option-description">
+                    Calcule o seguro de vida para uma pessoa específica com base em idade, sexo, período e tábua de mortalidade selecionada.
+                </div>
+            </a>
+
+            <!-- Cálculo Coletivo -->
+            <a href="calculadora_coletiva.html" class="option-card coletivo">
+                <div class="option-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="option-title">Cálculo Coletivo</div>
+                <div class="option-description">
+                    Calcule seguros de vida para múltiplas combinações de idade, sexo, período e tábuas de mortalidade em uma única análise.
+                </div>
+            </a>
+        </div>
+
+        <!-- Características do Sistema -->
+        <div class="features">
+            <h3><i class="fas fa-star me-2"></i>Características do Sistema</h3>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Cálculos Atuariais Precisos</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-table"></i>
+                    <span>Múltiplas Tábuas de Mortalidade</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Prêmio à Vista e Mensal</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-percentage"></i>
+                    <span>Taxas de Juros Personalizáveis</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-calculator"></i>
+                    <span>Fórmulas Matemáticas Detalhadas</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Interface Responsiva</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

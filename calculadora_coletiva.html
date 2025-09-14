@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Seguro de Vida - Coletivo</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px auto;
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--dark-color);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid var(--secondary-color);
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 8px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-calculate {
+            background: linear-gradient(45deg, var(--success-color), #2ecc71);
+            border: none;
+            border-radius: 10px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .results-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 2px solid var(--light-color);
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .table thead th {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .table tbody td {
+            border-color: #e9ecef;
+            vertical-align: middle;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner-border {
+            color: var(--secondary-color);
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .range-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .range-inputs .form-control {
+            flex: 1;
+        }
+
+        .range-separator {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-check {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-check:hover {
+            border-color: var(--secondary-color);
+        }
+
+        .form-check-input:checked + .form-check-label {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <a href="index.html" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar ao Início
+                    </a>
+                    <div></div>
+                </div>
+                <h1><i class="fas fa-users me-3"></i>Calculadora de Seguro de Vida - Coletivo</h1>
+                <p>Análise de Múltiplas Combinações - Cálculos Atuariais Comparativos</p>
+            </div>
+
+            <!-- Formulário de Entrada -->
+            <div class="form-section">
+                <h3><i class="fas fa-edit me-2"></i>Parâmetros de Entrada</h3>
+                <form id="calculatorForm">
+                    <div class="row">
+                        <!-- Intervalo de Idade -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Intervalo de Idade</label>
+                            <div class="range-inputs">
+                                <input type="number" class="form-control" id="idade_min" name="idade_min" value="20" min="0" max="110" step="1" placeholder="Idade mínima" required>
+                                <span class="range-separator">até</span>
+                                <input type="number" class="form-control" id="idade_max" name="idade_max" value="21" min="0" max="110" step="1" placeholder="Idade máxima" required>
+                            </div>
+                        </div>
+
+                        <!-- Sexo -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Sexo</label>
+                            <div class="checkbox-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="sexo_masculino" name="sexo" value="M" checked>
+                                    <label class="form-check-label" for="sexo_masculino">Masculino</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="sexo_feminino" name="sexo" value="F">
+                                    <label class="form-check-label" for="sexo_feminino">Feminino</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Período -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Período (anos)</label>
+                            <div class="range-inputs">
+                                <input type="number" class="form-control" id="periodo_min" name="periodo_min" value="4" min="1" max="10" step="1" placeholder="Período mínimo" required>
+                                <span class="range-separator">até</span>
+                                <input type="number" class="form-control" id="periodo_max" name="periodo_max" value="5" min="1" max="10" step="1" placeholder="Período máximo" required>
+                            </div>
+                        </div>
+
+                        <!-- Taxa de Juros -->
+                        <div class="col-md-6 mb-3">
+                            <label for="taxa_juros" class="form-label">Taxa de Juros (%)</label>
+                            <input type="number" class="form-control" id="taxa_juros" name="taxa_juros" value="10.00" step="0.01" min="0" max="20" placeholder="0,00 a 20,00%" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Tábuas Válidas -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tábuas Válidas</label>
+                            <select class="form-select" id="tabuas_validas" name="tabuas_validas" multiple>
+                                <option value="">Carregando tábuas...</option>
+                            </select>
+                            <small class="form-text text-muted">Segure Ctrl para selecionar múltiplas tábuas</small>
+                        </div>
+
+                        <!-- Tábuas Inválidas -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tábuas Inválidas</label>
+                            <select class="form-select" id="tabuas_invalidas" name="tabuas_invalidas" multiple>
+                                <option value="">Carregando tábuas...</option>
+                            </select>
+                            <small class="form-text text-muted">Segure Ctrl para selecionar múltiplas tábuas</small>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-calculate">
+                            <i class="fas fa-calculator me-2"></i>Calcular Análise Coletiva
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Calculando...</span>
+                </div>
+                <p class="mt-2">Calculando análise coletiva...</p>
+            </div>
+
+            <!-- Resultados -->
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <h3><i class="fas fa-table me-2"></i>Resultados da Análise Coletiva</h3>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Idade</th>
+                                <th>Sexo</th>
+                                <th>Período</th>
+                                <th>Tipo Tábua</th>
+                                <th>Tábua</th>
+                                <th>Taxa à Vista (%)</th>
+                                <th>Taxa Mensal (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <!-- Será preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info mt-4" id="summaryInfo" style="display: none;">
+                    <h5><i class="fas fa-info-circle me-2"></i>Resumo da Análise</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Total de combinações:</strong> <span id="totalCombinacoes">-</span></p>
+                            <p><strong>Idades analisadas:</strong> <span id="idadesAnalisadas">-</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Períodos analisados:</strong> <span id="periodosAnalisados">-</span></p>
+                            <p><strong>Tábuas utilizadas:</strong> <span id="tabuasUtilizadas">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Barra de Progresso -->
+
+
+                <!-- Botão de Download -->
+                <div class="text-center mt-4">
+                    <button class="btn btn-success btn-lg" id="downloadBtn" onclick="downloadExcel()" style="display: none;">
+                        <i class="fas fa-download me-2"></i>Baixar Tabela em Excel (.xlsx)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Carregar tábuas disponíveis ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarTabuas();
+        });
+
+        function carregarTabuas() {
+            fetch('/tabuas')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const selectValidas = document.getElementById('tabuas_validas');
+                        const selectInvalidas = document.getElementById('tabuas_invalidas');
+                        
+                        // Limpar opções existentes
+                        selectValidas.innerHTML = '';
+                        selectInvalidas.innerHTML = '';
+                        
+                        data.tabuas.forEach(tabua => {
+                            // Tábuas Válidas
+                            const optionValida = document.createElement('option');
+                            optionValida.value = tabua;
+                            optionValida.textContent = tabua;
+                            if (tabua === data.tabua_padrao) {
+                                optionValida.selected = true;
+                            }
+                            selectValidas.appendChild(optionValida);
+                            
+                            // Tábuas Inválidas
+                            const optionInvalida = document.createElement('option');
+                            optionInvalida.value = tabua;
+                            optionInvalida.textContent = tabua;
+                            selectInvalidas.appendChild(optionInvalida);
+                        });
+                    } else {
+                        console.error('Erro ao carregar tábuas:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na comunicação:', error);
+                });
+        }
+
+        // Formulário de cálculo
+        document.getElementById('calculatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculate();
+        });
+
+        function calculate() {
+            // Obter dados do formulário
+            const idadeMin = parseInt(document.getElementById('idade_min').value);
+            const idadeMax = parseInt(document.getElementById('idade_max').value);
+            const sexos = Array.from(document.querySelectorAll('input[name="sexo"]:checked')).map(cb => cb.value);
+            const periodoMin = parseInt(document.getElementById('periodo_min').value);
+            const periodoMax = parseInt(document.getElementById('periodo_max').value);
+            const taxaJuros = parseFloat(document.getElementById('taxa_juros').value);
+            const tabuasValidas = Array.from(document.getElementById('tabuas_validas').selectedOptions).map(opt => opt.value);
+            const tabuasInvalidas = Array.from(document.getElementById('tabuas_invalidas').selectedOptions).map(opt => opt.value);
+
+            // Validação
+            if (idadeMin > idadeMax) {
+                alert('A idade mínima deve ser menor ou igual à idade máxima.');
+                return;
+            }
+
+            if (periodoMin > periodoMax) {
+                alert('O período mínimo deve ser menor ou igual ao período máximo.');
+                return;
+            }
+
+            if (sexos.length === 0) {
+                alert('Selecione pelo menos um sexo.');
+                return;
+            }
+
+            if (tabuasValidas.length === 0 && tabuasInvalidas.length === 0) {
+                alert('Selecione pelo menos uma tábua válida ou inválida.');
+                return;
+            }
+
+            if (taxaJuros < 0 || taxaJuros > 20) {
+                alert('A taxa de juros deve estar entre 0% e 20%.');
+                return;
+            }
+
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+
+            // Enviar dados para o servidor Python
+            const data = {
+                idade_min: idadeMin,
+                idade_max: idadeMax,
+                sexos: sexos,
+                periodo_min: periodoMin,
+                periodo_max: periodoMax,
+                taxa_juros: taxaJuros,
+                tabuas_validas: tabuasValidas,
+                tabuas_invalidas: tabuasInvalidas
+            };
+
+            
+            // Fazer a requisição real
+            fetch('/calcular_coletivo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    alert('Erro no cálculo: ' + result.error);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                alert('Erro na comunicação com o servidor: ' + error.message);
+            });
+        }
+
+        function displayResults(result) {
+            const tbody = document.getElementById('resultsTableBody');
+            tbody.innerHTML = '';
+
+            result.resultados.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.idade}</td>
+                    <td>${item.sexo === 'M' ? 'Masculino' : 'Feminino'}</td>
+                    <td>${item.periodo}</td>
+                    <td><span class="badge ${item.tipo_tabua === 'Válido' ? 'bg-success' : 'bg-warning'}">${item.tipo_tabua}</span></td>
+                    <td>${item.tabua}</td>
+                    <td>${item.taxa_vista}</td>
+                    <td>${item.taxa_mensal}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Atualizar resumo
+            document.getElementById('totalCombinacoes').textContent = result.total_combinacoes;
+            document.getElementById('idadesAnalisadas').textContent = `${result.idade_min} a ${result.idade_max}`;
+            document.getElementById('periodosAnalisados').textContent = `${result.periodo_min} a ${result.periodo_max}`;
+            document.getElementById('tabuasUtilizadas').textContent = result.tabuas_utilizadas.join(', ');
+
+            // Mostrar seção de resultados
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('summaryInfo').style.display = 'block';
+            document.getElementById('downloadBtn').style.display = 'inline-block';
+            document.getElementById('resultsSection').classList.add('fade-in');
+            
+            // Armazenar resultados para download
+            window.currentResults = result;
+        }
+        
+        function downloadExcel() {
+            if (!window.currentResults) {
+                alert('Nenhum resultado disponível para download');
+                return;
+            }
+            
+            // Mostrar loading no botão
+            const btn = document.getElementById('downloadBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Gerando Excel...';
+            btn.disabled = true;
+            
+            fetch('/download_excel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(window.currentResults)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao gerar arquivo Excel');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Criar link de download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'resultados_analise_coletiva.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                alert('Erro ao baixar arquivo: ' + error.message);
+            })
+            .finally(() => {
+                // Restaurar botão
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+        
+    </script>
+</body>
+</html>
