@@ -10,88 +10,6 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Estilo para evitar flash de conteúdo não autenticado -->
-    <style>
-        body {
-            visibility: hidden;
-        }
-        body.authenticated {
-            visibility: visible;
-        }
-    </style>
-    
-    <!-- Script de verificação de autenticação -->
-    <script>
-        // Verificar autenticação
-        function checkAuthentication() {
-            const isAuthenticated = sessionStorage.getItem('authenticated') === 'true';
-            const loginTime = parseInt(sessionStorage.getItem('loginTime') || '0');
-            const lastActivity = parseInt(sessionStorage.getItem('lastActivity') || '0');
-            const currentTime = Date.now();
-            const sessionDuration = 8 * 60 * 60 * 1000; // 8 horas
-            const inactivityTimeout = 10 * 60 * 1000; // 10 minutos de inatividade
-            const maxSessionTime = 30 * 60 * 1000; // 30 minutos máximo
-            
-            if (!isAuthenticated) {
-                // Não autenticado - redirecionar IMEDIATAMENTE
-                window.location.href = 'login.html';
-                return false;
-            }
-            
-            // Verificar se passou do tempo máximo (30 minutos)
-            if (currentTime - loginTime >= maxSessionTime) {
-                // Sessão expirada por tempo máximo
-                sessionStorage.removeItem('authenticated');
-                sessionStorage.removeItem('loginTime');
-                sessionStorage.removeItem('lastActivity');
-                alert('Sessão expirada por tempo máximo (30 minutos). Faça login novamente.');
-                window.location.href = 'login.html';
-                return false;
-            }
-            
-            // Verificar se passou do tempo de inatividade (10 minutos)
-            if (currentTime - lastActivity >= inactivityTimeout) {
-                // Sessão expirada por inatividade
-                sessionStorage.removeItem('authenticated');
-                sessionStorage.removeItem('loginTime');
-                sessionStorage.removeItem('lastActivity');
-                alert('Sessão expirada por inatividade (10 minutos). Faça login novamente.');
-                window.location.href = 'login.html';
-                return false;
-            }
-            
-            // Verificar se passou do tempo total (8 horas)
-            if (currentTime - loginTime >= sessionDuration) {
-                // Sessão expirada por tempo total
-                sessionStorage.removeItem('authenticated');
-                sessionStorage.removeItem('loginTime');
-                sessionStorage.removeItem('lastActivity');
-                alert('Sessão expirada por tempo total (8 horas). Faça login novamente.');
-                window.location.href = 'login.html';
-                return false;
-            }
-            
-            // Sessão válida - atualizar última atividade
-            sessionStorage.setItem('lastActivity', currentTime.toString());
-            return true;
-        }
-        
-        // Executar verificação quando o DOM estiver carregado
-        document.addEventListener('DOMContentLoaded', function() {
-            if (checkAuthentication()) {
-                // Sessão válida - mostrar conteúdo
-                document.body.classList.add('authenticated');
-            }
-        });
-        
-        // Atualizar atividade a cada 5 minutos
-        setInterval(() => {
-            if (sessionStorage.getItem('authenticated') === 'true') {
-                sessionStorage.setItem('lastActivity', Date.now().toString());
-            }
-        }, 5 * 60 * 1000);
-    </script>
-    
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -127,7 +45,6 @@
         .header {
             margin-bottom: 50px;
         }
-
 
         .header h1 {
             color: var(--primary-color);
@@ -186,15 +103,6 @@
             background: linear-gradient(135deg, #f0f8ff 0%, #e0f0ff 100%);
         }
 
-        .option-card.prestamista {
-            border-color: var(--warning-color);
-        }
-
-        .option-card.prestamista:hover {
-            border-color: var(--warning-color);
-            background: linear-gradient(135deg, #fff8f0 0%, #ffe8d0 100%);
-        }
-
         .option-icon {
             font-size: 3rem;
             margin-bottom: 20px;
@@ -206,14 +114,6 @@
 
         .option-card.coletivo .option-icon {
             color: var(--secondary-color);
-        }
-
-        .option-card.prestamista .option-icon {
-            color: var(--warning-color);
-        }
-
-        .option-card.reserva .option-icon {
-            color: #8e44ad;
         }
 
         .option-title {
@@ -288,28 +188,6 @@
                 margin: 10px;
             }
             
-            .logo-container {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .logo {
-                margin-right: 0;
-                margin-bottom: 15px;
-            }
-            
-            .company-info {
-                text-align: center;
-            }
-            
-            .company-name {
-                font-size: 1.5rem;
-            }
-            
-            .company-description {
-                font-size: 0.9rem;
-            }
-            
             .header h1 {
                 font-size: 1.8rem;
             }
@@ -322,16 +200,6 @@
             .option-card {
                 padding: 30px 20px;
             }
-            
-            .features div[style*="display: flex"] {
-                flex-direction: column !important;
-                text-align: center !important;
-            }
-            
-            .features div[style*="display: flex"] .logo {
-                margin-right: 0 !important;
-                margin-bottom: 10px !important;
-            }
         }
     </style>
 </head>
@@ -339,7 +207,6 @@
     <div class="main-container fade-in">
         <!-- Header -->
         <div class="header">
-            
             <h1><i class="fas fa-calculator me-3"></i>Calculadora de Seguro Prestamista</h1>
             <p>Sistema especializado para cálculos atuariais de seguro prestamista com reavaliação anual</p>
         </div>
@@ -347,7 +214,7 @@
         <!-- Opções de Cálculo -->
         <div class="options-container">
             <!-- Seguro Prestamista Individual -->
-            <a href="calculadora_prestamista_postalis.html" class="option-card individual">
+            <a href="calculadora_prestamista_netlify.html" class="option-card individual">
                 <div class="option-icon">
                     <i class="fas fa-user"></i>
                 </div>
@@ -358,35 +225,13 @@
             </a>
 
             <!-- Seguro Prestamista Coletivo -->
-            <a href="calculadora_coletiva_postalis.html" class="option-card coletivo">
+            <a href="calculadora_coletiva_netlify.html" class="option-card coletivo">
                 <div class="option-icon">
                     <i class="fas fa-users"></i>
                 </div>
                 <div class="option-title">Seguro Prestamista Coletivo</div>
                 <div class="option-description">
                     Calcule seguros prestamistas para múltiplas combinações de idade, sexo, parcelas restantes e tábuas de mortalidade em uma única análise comparativa.
-                </div>
-            </a>
-
-            <!-- Cálculo Reserva Matemática Individual -->
-            <a href="reserva_matematica_individual.html" class="option-card reserva">
-                <div class="option-icon">
-                    <i class="fas fa-calculator"></i>
-                </div>
-                <div class="option-title">Cálculo Reserva Matemática Individual</div>
-                <div class="option-description">
-                    Calcule a reserva matemática individual do seguro prestamista com base no saldo devedor atual, parcelas restantes e planilha de taxas de risco.
-                </div>
-            </a>
-
-            <!-- Cálculo Reserva Matemática Coletivo -->
-            <a href="reserva_matematica_coletiva.html" class="option-card reserva">
-                <div class="option-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="option-title">Cálculo Reserva Matemática Coletivo</div>
-                <div class="option-description">
-                    Calcule a reserva matemática para múltiplos empréstimos simultaneamente, processando planilhas de base de dados e taxas de risco.
                 </div>
             </a>
         </div>
@@ -428,7 +273,6 @@
                     <span>Interface Responsiva e Moderna</span>
                 </div>
             </div>
-            
         </div>
     </div>
 
@@ -436,3 +280,4 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

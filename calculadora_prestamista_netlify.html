@@ -1,0 +1,2565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Seguro Prestamista - Web v2.0</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- MathJax para fórmulas matemáticas -->
+    <!-- Estilo para evitar flash de conteúdo não autenticado -->
+    <style>
+        body {
+            visibility: hidden;
+        }
+        body.authenticated {
+            visibility: visible;
+        }
+    </style>
+    
+    <!-- Script de verificação de autenticação - EXECUTA PRIMEIRO -->
+    <script>
+        // Verificar autenticação ANTES de carregar qualquer conteúdo
+        function checkAuthentication() {
+            const isAuthenticated = sessionStorage.getItem('authenticated') === 'true';
+            const loginTime = parseInt(sessionStorage.getItem('loginTime') || '0');
+            const lastActivity = parseInt(sessionStorage.getItem('lastActivity') || '0');
+            const currentTime = Date.now();
+            const sessionDuration = 8 * 60 * 60 * 1000; // 8 horas
+            const inactivityTimeout = 10 * 60 * 1000; // 10 minutos de inatividade
+            const maxSessionTime = 30 * 60 * 1000; // 30 minutos máximo
+            
+            if (!isAuthenticated) {
+                // Não autenticado - redirecionar IMEDIATAMENTE
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo máximo (30 minutos)
+            if (currentTime - loginTime >= maxSessionTime) {
+                // Sessão expirada por tempo máximo
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por tempo máximo (30 minutos). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo de inatividade (10 minutos)
+            if (currentTime - lastActivity >= inactivityTimeout) {
+                // Sessão expirada por inatividade
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por inatividade (10 minutos). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo total (8 horas)
+            if (currentTime - loginTime >= sessionDuration) {
+                // Sessão expirada por tempo total
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por tempo total (8 horas). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Sessão válida - atualizar última atividade
+            sessionStorage.setItem('lastActivity', currentTime.toString());
+            return true;
+        }
+        
+        // Executar verificação quando o DOM estiver carregado
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuthentication()) {
+                // Sessão válida - mostrar conteúdo
+                document.body.classList.add('authenticated');
+            }
+        });
+        
+        // Atualizar atividade a cada 5 minutos
+        setInterval(() => {
+            if (sessionStorage.getItem('authenticated') === 'true') {
+                sessionStorage.setItem('lastActivity', Date.now().toString());
+            }
+        }, 5 * 60 * 1000);
+    </script>
+    
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="tabuas_mortalidade.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e67e22;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --border-color: #bdc3c7;
+            --background-color: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f8f9fa;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .main-container {
+            background: var(--background-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px;
+            max-width: 1200px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            color: var(--text-primary);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        .form-section {
+            background: var(--background-color);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .form-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: var(--background-color);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.2rem rgba(230, 126, 34, 0.25);
+            outline: none;
+        }
+
+        .form-control:hover, .form-select:hover {
+            border-color: var(--accent-color);
+        }
+
+        .btn-calculate {
+            background: var(--accent-color);
+            border: none;
+            border-radius: 6px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+        }
+
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 126, 34, 0.4);
+            background: #d35400;
+        }
+
+        .btn-details {
+            background: linear-gradient(45deg, var(--secondary-color), #5dade2);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-details:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .results-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 2px solid var(--light-color);
+        }
+
+        .result-card {
+            background: var(--background-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--accent-color);
+            transition: transform 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .result-label {
+            font-size: 1rem;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .formula-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            margin: 10px 0;
+        }
+
+        .table-bordered th {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+        }
+
+        .alert-light {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert-light h6 {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--primary-color);
+        }
+
+        .text-warning {
+            color: var(--warning-color) !important;
+        }
+
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        .formula-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid var(--light-color);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .formula-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner-border {
+            color: var(--warning-color);
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .table thead th {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .table tbody td {
+            border-color: #e9ecef;
+            vertical-align: middle;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        /* Botão centralizado */
+        .btn-center {
+            margin: 2rem 0;
+            padding: 0.75rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background: var(--secondary-color);
+            border: none;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-center:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            background: #2980b9;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+
+        .prestamista-info {
+            background: linear-gradient(135deg, #fff8f0 0%, #ffe8d0 100%);
+            border: 2px solid var(--warning-color);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .prestamista-info h4 {
+            color: var(--warning-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .prestamista-info ul {
+            margin-bottom: 0;
+        }
+
+        .prestamista-info li {
+            margin-bottom: 8px;
+            color: var(--dark-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <a href="index.html" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar ao Início
+                    </a>
+                    <div></div>
+                </div>
+                
+                
+                <h1><i class="fas fa-home me-3"></i>Calculadora de Seguro Prestamista</h1>
+                <p>Seguro prestamista calculado por idade - Cobertura para os próximos 12 meses</p>
+            </div>
+
+
+            <!-- Layout Principal: Dados à esquerda, Resultados à direita -->
+            <div class="row">
+                <!-- Coluna Esquerda: Dados de Entrada -->
+                <div class="col-md-6">
+                    <div class="form-section">
+                        <h3><i class="fas fa-edit me-2"></i>Dados de Entrada</h3>
+                        <form id="calculatorForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="idade_atual" class="form-label">Idade Atual</label>
+                                    <input type="number" class="form-control" id="idade_atual" name="idade_atual" value="50" min="0" max="100" step="1" placeholder="0 a 100 anos" required>
+                                    <div class="form-text">Idade do segurado no momento do cálculo</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="periodo_total" class="form-label">Período Total (meses)</label>
+                                    <input type="number" class="form-control" id="periodo_total" name="periodo_total" value="36" min="1" max="120" step="1" placeholder="1 a 120 meses" required>
+                                    <div class="form-text">Duração total do financiamento</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="parcela_atual" class="form-label">Parcelas Restantes (meses)</label>
+                                    <input type="number" class="form-control" id="parcela_atual" name="parcela_atual" value="1" min="1" step="1" placeholder="1 ao período total" required>
+                                    <div class="form-text">Quantidade de meses restantes</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="sexo" class="form-label">Sexo</label>
+                                    <select class="form-select" id="sexo" name="sexo" required>
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Feminino</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="taxa_juros" class="form-label">Taxa de Juros Anual (%)</label>
+                                    <input type="number" class="form-control" id="taxa_juros" name="taxa_juros" value="12.0" step="0.0001" min="0" max="30" placeholder="0,0000 a 30,0000%" required>
+                                    <div class="form-text">Taxa de juros anual do financiamento</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="soma_segurada" class="form-label">Valor do Financiamento (R$)</label>
+                                    <input type="text" class="form-control" id="soma_segurada" name="soma_segurada" value="R$ 100.000,00" placeholder="R$ 1,00 a R$ 500.000,00" required>
+                                    <div class="form-text">Valor do financiamento</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label for="tabua" class="form-label">Tábua de Mortalidade</label>
+                                    <select class="form-select" id="tabua" name="tabua" required>
+                                        <option value="">Carregando tábuas...</option>
+                                    </select>
+                                    <div class="form-text">Selecione a tábua para o cálculo</div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-calculate">
+                                    <i class="fas fa-calculator me-2"></i>Calcular Seguro Prestamista
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Coluna Direita: Resultados -->
+                <div class="col-md-6">
+                    <!-- Loading -->
+                    <div class="loading" id="loading">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Calculando...</span>
+                        </div>
+                        <p class="mt-2">Calculando valores atuariais...</p>
+                    </div>
+
+                    <!-- Resultados -->
+                    <div class="results-section" id="resultsSection">
+                        <h3><i class="fas fa-chart-line me-2"></i>Resultados do Cálculo</h3>
+                        
+                        <!-- Resultados Principais -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-label">
+                                        <i class="fas fa-money-bill-wave me-2"></i>
+                                        Prêmio Anual
+                                    </div>
+                                    <div class="result-value" id="valorAnual">-</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-label">
+                                        <i class="fas fa-percentage me-2"></i>
+                                        Taxa de Risco Anual
+                                    </div>
+                                    <div class="result-value" id="percentualAnual">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-label">
+                                        <i class="fas fa-calendar-alt me-2"></i>
+                                        Prêmio Mensal
+                                    </div>
+                                    <div class="result-value" id="valorMensal">-</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-label">
+                                        <i class="fas fa-chart-line me-2"></i>
+                                        Taxa de Risco Mensal
+                                    </div>
+                                    <div class="result-value" id="percentualMensal">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- Resumo do Financiamento -->
+                        <div class="alert alert-warning mt-4" id="resumoFinanciamento" style="display: none;">
+                            <h5><i class="fas fa-home me-2"></i>Resumo do Financiamento</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Valor do Financiamento:</strong> <span id="resumoValorFinanciamento">-</span></p>
+                                    <p><strong>Parcela do Financiamento:</strong> <span id="resumoParcelaFinanciamento">-</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Prêmio Mensal do Seguro:</strong> <span id="resumoPremioMensal">-</span></p>
+                                    <p><strong>Taxa do Seguro:</strong> <span id="resumoTaxaSeguro">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botão para Memória de Cálculo - Centralizado -->
+            <div class="text-center">
+                <button type="button" class="btn btn-info btn-center" id="btnMemoriaCalculo">
+                    <i class="fas fa-calculator me-2"></i>Ver Memória de Cálculo
+                </button>
+            </div>
+
+            <!-- Resultados Detalhados -->
+            <div class="results-section" id="detailedResults" style="display: none;">
+                <h3><i class="fas fa-microscope me-2"></i>Resultados Detalhados - Seguro Prestamista</h3>
+
+                <!-- Layout 2 colunas: Financiamento e Seguro -->
+                <div class="row">
+                    <!-- Coluna Esquerda: Financiamento Price -->
+                    <div class="col-md-6">
+                        <div class="formula-container">
+                            <h5 class="formula-title">🏠 Cálculo do Financiamento Price</h5>
+                            <div class="text-center mb-3">
+                                <div class="formula-display">
+                                    $$PMT = S_0 \times \frac{i \times (1+i)^n}{(1+i)^n - 1}$$
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr><th>Parâmetro</th><th>Valor</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td>Valor do Financiamento (S₀)</td><td id="valorFinanciamento">-</td></tr>
+                                            <tr><td>Taxa Mensal (i)</td><td id="taxaMensal">-</td></tr>
+                                            <tr><td>Número de Parcelas (n)</td><td id="numParcelas">-</td></tr>
+                                            <tr class="table-success"><td><strong>Parcela (PMT)</strong></td><td id="parcelaFinanciamento">-</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Saldo Devedor -->
+                    <div class="col-md-6">
+                        <div class="formula-container">
+                            <h5 class="formula-title">📉 Fórmula do Saldo Devedor</h5>
+                            <div class="text-center mb-3">
+                                <div class="formula-display">
+                                    $$SD(t) = S_0 \times \frac{(1+i)^n - (1+i)^t}{(1+i)^n - 1}$$
+                                </div>
+                            </div>
+                            <div class="alert alert-info">
+                                <strong>Explicação:</strong><br>
+                                O saldo devedor no momento <em>t</em> é calculado considerando o valor inicial do financiamento e a taxa de juros. Este valor diminui a cada mês até chegar a zero no final do período.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layout 2 colunas: Prêmio Único e Prêmio Mensal -->
+                <div class="row">
+                    <!-- Coluna Esquerda: Prêmio Anual -->
+                    <div class="col-md-6">
+                        <div class="formula-container">
+                            <h5 class="formula-title">💰 Cálculo do Prêmio Anual (12 meses)</h5>
+                            
+                            <div class="alert alert-info mb-4">
+                                <h6><i class="fas fa-target me-2"></i>Objetivo</h6>
+                                <p class="mb-0">Calcular o <strong>prêmio anual</strong> baseado na idade atual do segurado, cobrindo os próximos 12 meses (ou meses restantes).</p>
+                            </div>
+
+                            <div class="alert alert-light">
+                                <h6 class="text-primary">Fórmula do Prêmio Anual:</h6>
+                                <div class="text-center mb-3">
+                                    <div class="formula-display">
+                                        $$A_{anual} = \sum_{k=1}^{12} B_k \times q_{idade\_atual} \times v^k$$
+                                    </div>
+                                </div>
+                                
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr><td><strong>B_k:</strong></td><td>Saldo devedor no mês k dos próximos 12 meses</td></tr>
+                                        <tr><td><strong>q_(idade_atual):</strong></td><td>Probabilidade anual de morte para a idade atual</td></tr>
+                                        <tr><td><strong>q_mensal:</strong></td><td>Probabilidade mensal = 1 - (1 - q_anual)^(1/12)</td></tr>
+                                        <tr><td><strong>v^k:</strong></td><td>Fator de desconto mensal = 1/(1+i)^k</td></tr>
+                                        <tr class="table-success"><td><strong>Prêmio Anual:</strong></td><td id="resultadoPremioAnual">-</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="alert alert-light">
+                                <h6 class="text-primary">Cálculo Detalhado do Prêmio Anual:</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                <tr><td><strong>Valor do Financiamento:</strong></td><td id="valorFinanciamentoDetalhado">-</td></tr>
+                                                <tr><td><strong>Taxa Mensal:</strong></td><td id="taxaMensalDetalhado">-</td></tr>
+                                                <tr><td><strong>Parcelas Restantes:</strong></td><td id="parcelaRestanteDetalhado">-</td></tr>
+                                                <tr><td><strong>Fator de Desconto (v):</strong></td><td id="fatorDescontoDetalhado">-</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                <tr><td><strong>Idade Atual:</strong></td><td id="idadeAtualDetalhado">-</td></tr>
+                                                <tr><td><strong>Sexo:</strong></td><td id="sexoDetalhado">-</td></tr>
+                                                <tr><td><strong>Prob. Morte Anual:</strong></td><td id="probMorteAnualDetalhado">-</td></tr>
+                                                <tr><td><strong>Prob. Morte Mensal:</strong></td><td id="probMorteMensalDetalhado">-</td></tr>
+                                                <tr><td><strong>Meses Cobertos:</strong></td><td id="mesesCobertosDetalhado">-</td></tr>
+                                                <tr><td><strong>Tábua de Mortalidade:</strong></td><td id="tabuaDetalhado">-</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info mt-3">
+                    <h6><i class="fas fa-info-circle me-2"></i>Como é calculado (Fórmula Atuarial Correta):</h6>
+                                    <p class="mb-2">Para os próximos 12 meses (ou meses restantes):</p>
+                                    <ol class="mb-0">
+                                        <li><strong>B_k:</strong> Calcula o saldo devedor para cada um dos próximos 12 meses</li>
+                        <li><strong>k-1 P_x:</strong> Probabilidade de sobreviver até o início do período k</li>
+                        <li><strong>q_x+k-1:</strong> Probabilidade de morrer no período k (dada a idade x+k-1)</li>
+                                        <li><strong>v^k:</strong> Aplica o fator de desconto mensal para cada mês</li>
+                        <li><strong>Contribuição:</strong> B_k × k-1 P_x × q_x+k-1 × v^k</li>
+                                    </ol>
+                    <p class="mb-2"><strong>Fórmula Completa:</strong> A = Σ B_k × k-1 P_x × q_x+k-1 × v^k</p>
+                    <p class="mb-2"><strong>Vantagem:</strong> Considera corretamente a probabilidade de sobrevivência até cada período.</p>
+                    <p class="mb-2"><strong>Reavaliação Anual:</strong> A cada aniversário, o seguro é recalculado com a nova idade e nova probabilidade de morte.</p>
+                                    <p class="mb-0 mt-2">O <strong>Prêmio Anual</strong> é a soma das contribuições dos próximos 12 meses.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Prêmio Mensal -->
+                    <div class="col-md-6">
+                        <div class="formula-container">
+                            <h5 class="formula-title">📅 Cálculo do Prêmio Mensal</h5>
+                            
+                            <div class="alert alert-info mb-4">
+                                <h6><i class="fas fa-target me-2"></i>Objetivo</h6>
+                                <p class="mb-0">Transformar o <strong>Prêmio Anual</strong> em <strong>parcelas mensais iguais</strong> para os próximos 12 meses.</p>
+                            </div>
+
+                            <div class="alert alert-light">
+                                <h6 class="text-primary">Fórmula do Prêmio Mensal ATUARIAL:</h6>
+                                <div class="text-center mb-3">
+                                    <div class="formula-display">
+                                        $$P_{mensal} = \frac{A_{anual}}{a_{x:12}}$$
+                                    </div>
+                                </div>
+                                <div class="text-center mb-3">
+                                    <div class="formula-display">
+                                        $$a_{x:12} = \sum_{k=1}^{12} v^k \times _{k-1}P_x$$
+                                    </div>
+                                </div>
+                                
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr><td><strong>A_anual:</strong></td><td>Prêmio anual (12 meses)</td></tr>
+                                        <tr><td><strong>ax:12:</strong></td><td>Anuidade atuarial por 12 meses</td></tr>
+                                        <tr><td><strong>v^k:</strong></td><td>Fator de desconto para período k</td></tr>
+                                        <tr><td><strong>k-1Px:</strong></td><td>Probabilidade de sobreviver até período k</td></tr>
+                                        <tr class="table-success"><td><strong>Prêmio Mensal:</strong></td><td id="resultadoPremioMensal">-</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="alert alert-light">
+                                <h6 class="text-primary">Cálculo Detalhado do Prêmio Mensal:</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                <tr><td><strong>Prêmio Único (A):</strong></td><td id="premioUnicoDetalhado">-</td></tr>
+                                                <tr><td><strong>Anuidade Mensal (a):</strong></td><td id="anuidadeMensalDetalhado">-</td></tr>
+                                                <tr><td><strong>Fator de Desconto:</strong></td><td id="fatorDescontoMensal">-</td></tr>
+                                                <tr><td><strong>Número de Parcelas:</strong></td><td id="numParcelasMensal">-</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                <tr><td><strong>Taxa Mensal:</strong></td><td id="taxaMensalDetalhado2">-</td></tr>
+                                                <tr><td><strong>PMT Financiamento:</strong></td><td id="pmtFinanciamentoDetalhado">-</td></tr>
+                                                <tr><td><strong>Taxa do Seguro:</strong></td><td id="taxaSeguroDetalhado">-</td></tr>
+                                                <tr><td><strong>Economia vs Seguro Normal:</strong></td><td id="economiaSeguro">-</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info mt-3">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Como é calculado (Pagamento ANTECIPADO):</h6>
+                                    <p class="mb-2">Para seguro prestamista, o pagamento é <strong>ANTECIPADO</strong> (início do período):</p>
+                                    <div class="text-center mb-3">
+                                        <div class="formula-display">
+                                            $$P_{mensal} = A_{anual} \times \frac{i}{1-(1+i)^{-12}} \times \frac{1}{1+i}$$
+                                        </div>
+                                    </div>
+                                    <p class="mb-2">Onde:</p>
+                                    <ul class="mb-0">
+                                        <li><strong>A_anual:</strong> Prêmio puro anual (12 meses)</li>
+                                        <li><strong>i/(1-(1+i)^(-12)):</strong> Fator de anuidade postecipada</li>
+                                        <li><strong>1/(1+i):</strong> Fator de antecipação (pagamento no início)</li>
+                                        <li><strong>Resultado:</strong> Prêmio mensal antecipado nivelado</li>
+                                    </ul>
+                                    <p class="mb-0 mt-2"><strong>Vantagem:</strong> O segurado paga no início do período e fica coberto imediatamente.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-light">
+                                <h6 class="text-primary">Taxa Mensal em relação ao PMT:</h6>
+                                <div class="text-center mb-3">
+                                    <div class="formula-display">
+                                        $$\text{Taxa Mensal} = \frac{\text{Prêmio Mensal}}{\text{PMT do Financiamento}} \times 100\%$$
+                                    </div>
+                                </div>
+                                
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr><td><strong>Prêmio Mensal:</strong></td><td id="premioMensalTaxa">-</td></tr>
+                                        <tr><td><strong>PMT Financiamento:</strong></td><td id="pmtFinanciamentoTaxa">-</td></tr>
+                                        <tr class="table-success"><td><strong>Taxa Mensal:</strong></td><td id="resultadoTaxaMensal">-</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evolução do Saldo Devedor -->
+                <div class="formula-container">
+                    <h5 class="formula-title">📊 Evolução do Saldo Devedor - Próximos 12 Meses</h5>
+                    
+                    <div class="alert alert-info mb-4">
+                        <h6><i class="fas fa-info-circle me-2"></i>Como funciona o Seguro Prestamista por Idade</h6>
+                        <p class="mb-2">O seguro é calculado para os <strong>próximos 12 meses</strong> baseado na idade atual do segurado. A cada mês, o valor segurado é exatamente igual ao saldo devedor do financiamento.</p>
+                        <p class="mb-2"><strong>Cálculo por Idade:</strong> Usa a probabilidade anual de morte da idade atual para todos os próximos 12 meses, refletindo o risco real dessa faixa etária.</p>
+                        <p class="mb-2"><strong>Reavaliação Anual:</strong> A cada aniversário, o seguro é recalculado com a nova idade e nova probabilidade de morte, garantindo precificação justa.</p>
+                        <p class="mb-0"><strong>Vantagem:</strong> O prêmio reflete exatamente o risco da idade atual, sem misturar diferentes faixas etárias no mesmo cálculo.</p>
+                    </div>
+                    
+                    <div class="alert alert-success mb-4">
+                        <h6><i class="fas fa-calculator me-2"></i>Taxa de Quitação de Risco Mensal</h6>
+                        <p class="mb-2">Esta taxa representa o custo efetivo do seguro em relação ao financiamento, considerando que o prêmio único é "descontado" do valor financiado.</p>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">📊 Parâmetros do Cálculo:</h6>
+                                <table class="table table-sm table-bordered">
+                                    <tr><td><strong>Valor Financiado:</strong></td><td id="valorFinanciadoQuitacao">-</td></tr>
+                                    <tr><td><strong>Prêmio Único:</strong></td><td id="premioUnicoQuitacao">-</td></tr>
+                                    <tr><td><strong>Valor Líquido (PV):</strong></td><td id="valorLiquidoQuitacao">-</td></tr>
+                                    <tr><td><strong>Parcela (PMT):</strong></td><td id="pmtQuitacao">-</td></tr>
+                                    <tr><td><strong>Períodos (nper):</strong></td><td id="nperQuitacao">-</td></tr>
+                                    <tr><td><strong>Taxa Juros Mensal:</strong></td><td id="taxaJurosMensalQuitacao">-</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">🧮 Cálculo Passo a Passo:</h6>
+                                <div class="bg-light p-3 rounded">
+                                    <p class="mb-2"><strong>1. Valor Líquido:</strong></p>
+                                    <p class="small text-muted">Valor Financiado - Prêmio Único</p>
+                                    
+                                    <p class="mb-2"><strong>2. Taxa Implícita:</strong></p>
+                                    <p class="small text-muted">TAXA(nper, pmt, pv, fv=0)</p>
+                                    
+                                    <p class="mb-2"><strong>3. Taxa Ajustada:</strong></p>
+                                    <p class="small text-muted">(1 + taxa_implícita) / (1 + taxa_juros) - 1</p>
+                                    
+                                    <p class="mb-2"><strong>4. Resultado Final:</strong></p>
+                                    <p class="small text-muted" id="resultadoQuitacaoDetalhado">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        
+                        <p class="mb-0 mt-3"><strong>Fórmula Completa:</strong> <code>(1 + TAXA(nper=Periodo*12, pmt=+PMT, pv=-(ValorFinanciamento-PremioUnico)))/(1+TaxaJurosMensal)-1</code></p>
+                    </div>
+                    
+                    <div class="alert alert-warning mb-4">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Entendendo as Colunas</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <ul class="mb-0">
+                                    <li><strong>Saldo Devedor:</strong> Quanto ainda deve no financiamento</li>
+                                    <li><strong>Parcela (PMT):</strong> Valor fixo da parcela mensal</li>
+                                    <li><strong>Juros:</strong> Parte da parcela que vai para juros</li>
+                                    <li><strong>Amortização:</strong> Parte da parcela que reduz a dívida</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <ul class="mb-0">
+                                    <li><strong>Valor Segurado:</strong> Igual ao saldo devedor</li>
+                                    <li><strong>Prob. Sobrevivência:</strong> Probabilidade de sobreviver até o início do mês</li>
+                                    <li><strong>Prob. Morte:</strong> Probabilidade mensal calculada a partir da anual</li>
+                                    <li><strong>Fator Desconto:</strong> Valor presente do dinheiro</li>
+                                    <li><strong>Cálculo:</strong> Fórmula passo a passo</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <ul class="mb-0">
+                                    <li><strong>Contribuição:</strong> Resultado final para o prêmio</li>
+                                    <li class="text-muted"><em>Fórmula: Saldo × Prob. Sobrevivência × Prob. Morte × Fator Desconto</em></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-light mt-3">
+                            <h6><i class="fas fa-calculator me-2"></i>Conversão de Probabilidades Anuais para Mensais (Metodologia ChatGPT)</h6>
+                            <p class="mb-2">Como as tábuas de mortalidade fornecem probabilidades anuais (q_anual), convertemos para mensais usando a fórmula atuarial padrão:</p>
+                            <div class="text-center mb-3">
+                                <div class="formula-display">
+                                    $$q_{mensal} = 1 - (1 - q_{anual})^{\frac{1}{12}}$$
+                                </div>
+                            </div>
+                            <p class="mb-2"><strong>Exemplo:</strong> Se q_anual = 0.01 (1% ao ano), então q_mensal ≈ 0.00083 (0.083% ao mês)</p>
+                            <p class="mb-2"><strong>Implementação:</strong> Esta conversão é aplicada automaticamente no cálculo, garantindo que a probabilidade mensal seja consistente com a anual.</p>
+                            <p class="mb-0"><strong>Vantagem:</strong> Esta aproximação preserva a probabilidade anual total e é amplamente utilizada em cálculos atuariais profissionais.</p>
+                        </div>
+                    </div>
+
+                    <!-- Tabela da Evolução -->
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-striped table-hover table-sm" id="evolucaoSaldo">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Mês Relativo</th>
+                                    <th>Mês Absoluto</th>
+                                    <th>Saldo Devedor</th>
+                                    <th>Prob. Morte Mensal</th>
+                                    <th>Fator Desconto</th>
+                                    <th>Valor Antes Desc.</th>
+                                    <th>Contribuição</th>
+                                </tr>
+                            </thead>
+                            <tbody id="evolucaoSaldoBody">
+                                <!-- Será preenchido via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Resumo da Evolução -->
+                    <div class="alert alert-info mt-3" id="resumoEvolucao" style="display: none;">
+                        <h6><i class="fas fa-chart-line me-2"></i>Resumo da Evolução</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Total de Meses:</strong> <span id="totalMeses">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Saldo Inicial:</strong> <span id="saldoInicial">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Saldo Final:</strong> <span id="saldoFinal">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Redução Total:</strong> <span id="reducaoTotal">-</span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-12">
+                                <div class="alert alert-success mb-0">
+                                    <strong><i class="fas fa-calculator me-2"></i>Soma das Contribuições:</strong> 
+                                    <span id="somaContribuicoes" class="fs-5">-</span>
+                                    <small class="text-muted d-block mt-1">Este valor deve ser igual ao Prêmio Único calculado acima</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Projeções por Idade -->
+            <div class="results-section" id="projecoesSection" style="display: none;">
+                <h3><i class="fas fa-chart-line me-2"></i>Projeções do Seguro por Idade</h3>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>Como Funcionam as Projeções</h6>
+                    <p class="mb-2">Esta seção mostra como o prêmio do seguro prestamista evolui ao longo dos anos, considerando que a cada aniversário o seguro é recalculado com a nova idade.</p>
+                    <p class="mb-0">Cada linha representa um ano de cobertura, mostrando a idade, o prêmio mensal e a taxa do seguro para aquele período.</p>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="tabelaProjecoes">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Ano</th>
+                                <th>Idade</th>
+                                <th>Parcelas</th>
+                                <th>Prêmio Mensal</th>
+                                <th>Taxa do Seguro</th>
+                                <th>Prêmio Anual</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaProjecoesBody">
+                            <!-- Será preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-warning mt-3">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Importante</h6>
+                    <p class="mb-0">As projeções são baseadas nas probabilidades de morte atuais. Na prática, o seguro será recalculado anualmente considerando a idade exata e qualquer atualização nas tábuas de mortalidade.</p>
+                </div>
+            </div>
+
+            <!-- Seção de Reserva Matemática -->
+            <div class="results-section" id="reservaMatematicaSection" style="display: none;">
+                <h3><i class="fas fa-chart-pie me-2"></i>Reserva Matemática (Provisão Prospectiva)</h3>
+                
+                <!-- Seleção do Tempo t -->
+                <div class="form-section">
+                    <h4><i class="fas fa-clock me-2"></i>Selecionar Tempo t</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="tempoT" class="form-label">Tempo t (meses)</label>
+                            <input type="number" class="form-control" id="tempoT" min="0" max="120" step="1" placeholder="0 a 120 meses" required>
+                            <div class="form-text">Selecione o tempo t para calcular a reserva matemática (0 = início, período = fim)</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Período Total</label>
+                            <input type="text" class="form-control" id="periodoTotal" readonly>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-warning" id="btnCalcularReserva">
+                            <i class="fas fa-calculator me-2"></i>Calcular Reserva Matemática
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resultados da Reserva Matemática -->
+                <div id="resultadosReserva" style="display: none;">
+                    <!-- Resultado Principal -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="result-card">
+                                <div class="result-label">
+                                    <i class="fas fa-piggy-bank me-2"></i>
+                                    Reserva Matemática
+                                </div>
+                                <div class="result-value" id="valorReservaMatematica">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="result-card">
+                                <div class="result-label">
+                                    <i class="fas fa-gift me-2"></i>
+                                    VP Benefícios Futuros
+                                </div>
+                                <div class="result-value" id="valorPresenteBeneficios">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="result-card">
+                                <div class="result-label">
+                                    <i class="fas fa-credit-card me-2"></i>
+                                    VP Prêmios Futuros
+                                </div>
+                                <div class="result-value" id="valorPresentePremios">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Explicação -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle me-2"></i>Explicação</h6>
+                                <p class="mb-0" id="explicacaoReserva">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Debug: Prêmio Mensal -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-warning">
+                                <h6><i class="fas fa-bug me-2"></i>Debug - Prêmio Mensal</h6>
+                                <p class="mb-0"><strong>Prêmio Mensal:</strong> <span id="premioMensalDebug">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Situação Atual -->
+                    <div class="alert alert-info mt-4">
+                        <h5><i class="fas fa-user-clock me-2"></i>Situação Atual no Tempo t</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Idade Atual:</strong> <span id="idadeAtualReserva">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Período Restante:</strong> <span id="periodoRestanteReserva">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Saldo Devedor:</strong> <span id="saldoDevedorAtual">-</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Valor Segurado:</strong> <span id="valorSeguradoAtual">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fórmula da Reserva Matemática -->
+                    <div class="formula-container">
+                        <h5 class="formula-title">📐 Fórmula da Reserva Matemática</h5>
+                        <div class="text-center mb-3">
+                            <div class="formula-display">
+                                $$V_t = \sum_{k=t+1}^{n} v^{k-t} \cdot SD_k \cdot _{k-t|1}q_{x+t} - \sum_{k=t+1}^{n} v^{k-t} \cdot P \cdot _{k-t}p_{x+t}$$
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-light">
+                            <h6 class="text-primary">📋 Explicação dos Símbolos:</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="mb-0">
+                                        <li><strong>V_t:</strong> Reserva matemática no tempo t</li>
+                                        <li><strong>SD_k:</strong> Saldo devedor no mês k (benefício)</li>
+                                        <li><strong>P:</strong> Prêmio mensal constante</li>
+                                        <li><strong>_{k-t}p_{x+t}:</strong> Probabilidade de sobrevivência por k-t períodos</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="mb-0">
+                                        <li><strong>_{k-t|1}q_{x+t}:</strong> Probabilidade de sobreviver k-t períodos e morrer no próximo</li>
+                                        <li><strong>v^{k-t}:</strong> Fator de desconto de t para k</li>
+                                        <li><strong>n:</strong> Período total do seguro</li>
+                                        <li><strong>t:</strong> Tempo atual de avaliação</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cálculo Detalhado da Reserva -->
+                    <div class="formula-container">
+                        <h5 class="formula-title">🔍 Cálculo Detalhado da Reserva Matemática</h5>
+                        
+                        <div class="alert alert-info mb-4">
+                            <h6><i class="fas fa-info-circle me-2"></i>Como funciona a Reserva Matemática</h6>
+                            <p class="mb-2">A reserva matemática no tempo t representa o valor que a seguradora deve manter em reserva para honrar os compromissos futuros do seguro, considerando que o segurado sobreviveu até o tempo t.</p>
+                            <p class="mb-2"><strong>Fórmula Padrão Atuarial:</strong> V_t = Σ[k=t+1 to n] v^(k-t) B_k · k-1-tPx+t · qx+k-1 - Σ[k=t+1 to n] v^(k-t) P_k · k-tPx+t</p>
+                            <p class="mb-2"><strong>Para Seguro Prestamista com Prêmio Mensal:</strong> O prêmio P_k é o mesmo valor mensal para todos os meses k. A reserva é calculada como a diferença entre o valor presente dos benefícios futuros e o valor presente dos prêmios futuros.</p>
+                            <p class="mb-2"><strong>Interpretação:</strong> Se o segurado estiver vivo no tempo t, este é o valor que a seguradora precisa ter guardado para cumprir suas obrigações futuras.</p>
+                            <p class="mb-0"><strong>Casos Especiais:</strong></p>
+                            <ul class="mb-0">
+                                <li><strong>t = 0:</strong> Reserva = Prêmio Único (valor pago à vista)</li>
+                                <li><strong>t = período:</strong> Reserva = 0 (seguro terminou)</li>
+                                <li><strong>0 < t < período:</strong> Reserva = VP(Benefícios Futuros) - VP(Prêmios Futuros)</li>
+                            </ul>
+                        </div>
+
+                        <!-- Tabela do Cálculo Detalhado -->
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-striped table-hover table-sm" id="tabelaReservaDetalhada">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th>Mês</th>
+                                        <th>Idade</th>
+                                        <th>Saldo Devedor (SD_k)</th>
+                                        <th>Prêmio (P)</th>
+                                        <th>_{k-t}p_{x+t}</th>
+                                        <th>_{k-t|1}q_{x+t}</th>
+                                        <th>Fator Desconto</th>
+                                        <th>Contrib. Benefícios</th>
+                                        <th>Contrib. Prêmios</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaReservaDetalhadaBody">
+                                    <!-- Será preenchido via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Resumo da Reserva -->
+                        <div class="alert alert-success mt-3" id="resumoReserva" style="display: none;">
+                            <h6><i class="fas fa-chart-line me-2"></i>Resumo da Reserva Matemática</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Período Restante:</strong> <span id="resumoPeriodoRestante">-</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Saldo Devedor Atual:</strong> <span id="resumoSaldoDevedor">-</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Reserva Matemática:</strong> <span id="resumoValorReserva" class="fs-5">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção de Memória de Cálculo Detalhada -->
+            <div class="results-section" id="memoriaCalculoSection" style="display: none;">
+                <h3><i class="fas fa-calculator me-2"></i>Memória de Cálculo Detalhada</h3>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>Explicação da Memória de Cálculo</h6>
+                    <p class="mb-2">Esta seção mostra <strong>detalhadamente</strong> como foi calculado o prêmio anual, incluindo:</p>
+                    <ul class="mb-0">
+                        <li><strong>Parâmetros de entrada</strong> utilizados no cálculo</li>
+                        <li><strong>Somatório completo</strong> mês a mês com todas as contribuições</li>
+                        <li><strong>Fórmulas aplicadas</strong> em cada etapa</li>
+                        <li><strong>Resultado final</strong> com verificação matemática</li>
+                    </ul>
+                </div>
+
+                <!-- Parâmetros de Entrada -->
+                <div class="formula-container">
+                    <h5 class="formula-title">📋 Parâmetros de Entrada</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-dark">
+                                    <tr><th>Parâmetro</th><th>Valor</th></tr>
+                                </thead>
+                                <tbody id="parametrosEntrada">
+                                    <!-- Será preenchido via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-dark">
+                                    <tr><th>Parâmetro</th><th>Valor</th></tr>
+                                </thead>
+                                <tbody id="parametrosCalculados">
+                                    <!-- Será preenchido via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalhes da Tábua de Mortalidade -->
+                <div class="formula-container">
+                    <h5 class="formula-title">📊 Tábua de Mortalidade Utilizada</h5>
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-table me-2"></i>Informações da Tábua</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-dark">
+                                        <tr><th>Parâmetro</th><th>Valor</th></tr>
+                                    </thead>
+                                    <tbody id="detalhesTabua">
+                                        <!-- Será preenchido via JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-light">
+                                    <h6 class="text-primary">Como a Tábua é Aplicada:</h6>
+                                    <p class="mb-2"><strong>1. Consulta por Idade:</strong> A tábua fornece a probabilidade anual de morte (q_x) para a idade atual do segurado.</p>
+                                    <p class="mb-2"><strong>2. Ajuste por Sexo:</strong> Diferentes probabilidades para homens e mulheres na mesma idade.</p>
+                                    <p class="mb-0"><strong>3. Conversão Mensal:</strong> A probabilidade anual é convertida para mensal usando fórmula atuarial.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversão de Probabilidade Anual para Mensal -->
+                <div class="formula-container">
+                    <h5 class="formula-title">🔄 Conversão de Probabilidade Anual para Mensal</h5>
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-calculator me-2"></i>Processo de Conversão Atuarial</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Fórmula de Conversão:</h6>
+                                <div class="text-center mb-3">
+                                    <div class="formula-display">
+                                        $$q_{mensal} = 1 - (1 - q_{anual})^{\frac{1}{12}}$$
+                                    </div>
+                                </div>
+                                <p class="mb-2"><strong>Onde:</strong></p>
+                                <ul class="mb-0">
+                                    <li><strong>q_anual:</strong> Probabilidade anual de morte da tábua</li>
+                                    <li><strong>q_mensal:</strong> Probabilidade mensal calculada</li>
+                                    <li><strong>1/12:</strong> Fator de conversão temporal</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Cálculo Detalhado:</h6>
+                                <div class="bg-light p-3 rounded" id="calculoProbabilidadeDetalhado">
+                                    <!-- Será preenchido via JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fórmula Principal -->
+                <div class="formula-container">
+                    <h5 class="formula-title">🧮 Fórmula Principal Aplicada</h5>
+                    <div class="alert alert-light">
+                        <h6 class="text-primary">Fórmula do Prêmio Anual (Metodologia Atuarial):</h6>
+                        <div class="text-center mb-3">
+                            <div class="formula-display">
+                                $$A_{anual} = \sum_{k=1}^{12} B_k \times _{k-1}P_x \times q_{x+k-1} \times v^k$$
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>B_k:</strong> Saldo devedor no mês k
+                            </div>
+                            <div class="col-md-3">
+                                <strong>k-1P_x:</strong> Probabilidade de sobreviver k-1 meses
+                            </div>
+                            <div class="col-md-3">
+                                <strong>q_x+k-1:</strong> Probabilidade de morte no período k
+                            </div>
+                            <div class="col-md-3">
+                                <strong>v^k:</strong> Fator de desconto mensal
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cálculo Detalhado Mês a Mês -->
+                <div class="formula-container">
+                    <h5 class="formula-title">📊 Cálculo Detalhado Mês a Mês</h5>
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Memória de Cálculo Completa</h6>
+                        <p class="mb-2">Abaixo está o <strong>somatório completo</strong> utilizado para calcular o prêmio anual:</p>
+                        <div class="bg-light p-3 rounded" id="memoriaCalculoCompleta">
+                            <!-- Será preenchido via JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela Detalhada do Somatório -->
+                <div class="formula-container">
+                    <h5 class="formula-title">📈 Tabela Detalhada do Somatório</h5>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-striped table-hover table-sm" id="tabelaMemoriaCalculo">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Mês (k)</th>
+                                    <th>Mês Absoluto</th>
+                                    <th>Saldo Devedor (B_k)</th>
+                                    <th>Prob. Sobrevivência (k-1 P_x)</th>
+                                    <th>Prob. Morte (q_x+k-1)</th>
+                                    <th>Fator Desconto (v^k)</th>
+                                    <th>Valor Antes Desc.</th>
+                                    <th>Contribuição (B_k × k-1 P_x × q_x+k-1 × v^k)</th>
+                                    <th>Soma Acumulada</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaMemoriaCalculoBody">
+                                <!-- Será preenchido via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Resultado Final e Verificação -->
+                <div class="formula-container">
+                    <h5 class="formula-title">✅ Resultado Final e Verificação</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-check-circle me-2"></i>Resultado do Somatório</h6>
+                                <div class="text-center">
+                                    <div class="fs-4" id="resultadoSomatorioFinal">-</div>
+                                    <small class="text-muted">Prêmio Anual Calculado</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-calculator me-2"></i>Verificação Matemática</h6>
+                                <div class="text-center">
+                                    <div class="fs-4" id="verificacaoMatematica">-</div>
+                                    <small class="text-muted">Soma das Contribuições</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-light mt-3">
+                        <h6 class="text-primary">Fórmula de Conversão para Prêmio Mensal ATUARIAL:</h6>
+                        <div class="text-center mb-3">
+                            <div class="formula-display">
+                                $$P_{mensal} = \frac{A_{anual}}{a_{x:12}}$$
+                            </div>
+                        </div>
+                        <div class="text-center mb-3">
+                            <div class="formula-display">
+                                $$a_{x:12} = \sum_{k=1}^{12} v^k \times _{k}P_x$$
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Prêmio Anual:</strong> <span id="premioAnualMemoria">-</span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Anuidade Atuarial (ax:12):</strong> <span id="fatorAnuidadeMemoria">-</span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Prêmio Mensal:</strong> <span id="premioMensalMemoria">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabela do Somatório da Anuidade Atuarial -->
+                    <div class="alert alert-info mt-3">
+                        <h6 class="text-primary">📊 Somatório da Anuidade Atuarial (ax:12):</h6>
+                        <p class="mb-3">Cálculo detalhado: <code>ax:12 = Σ(k=1 to 12) v^k × kPx</code></p>
+                        
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-striped table-hover table-sm">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th>Período (k)</th>
+                                        <th>Fator Desconto (v^k)</th>
+                                        <th>Prob. Sobrevivência (kPx)</th>
+                                        <th>Contribuição (v^k × kPx)</th>
+                                        <th>Soma Acumulada</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaAnuidadeAtuarialBody">
+                                    <!-- Será preenchido via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="alert alert-success mt-3">
+                            <h6><i class="fas fa-calculator me-2"></i>Resultado Final da Anuidade:</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Anuidade Atuarial (ax:12):</strong> <span id="anuidadeAtuarialFinal">-</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Prêmio Mensal:</strong> <span id="premioMensalFinal">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo Executivo -->
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-file-alt me-2"></i>Resumo Executivo da Memória de Cálculo</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Total de Meses:</strong> <span id="totalMesesMemoria">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Saldo Inicial:</strong> <span id="saldoInicialMemoria">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Saldo Final:</strong> <span id="saldoFinalMemoria">-</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Redução Total:</strong> <span id="reducaoTotalMemoria">-</span>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <strong>Probabilidade Anual:</strong> <span id="probAnualMemoria">-</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Probabilidade Mensal:</strong> <span id="probMensalMemoria">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Carregar tábuas disponíveis ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM carregado, iniciando carregamento das tábuas...');
+            carregarTabuas();
+            // Inicializar tooltips do Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Atualizar max das parcelas restantes quando período total mudar
+            document.getElementById('periodo_total').addEventListener('input', function() {
+                const periodoTotal = parseInt(this.value);
+                const parcelaRestante = document.getElementById('parcela_atual');
+                parcelaRestante.max = periodoTotal;
+                parcelaRestante.placeholder = `1 a ${periodoTotal}`;
+                
+                // Se parcelas restantes forem maiores que período total, ajustar
+                if (parseInt(parcelaRestante.value) > periodoTotal) {
+                    parcelaRestante.value = periodoTotal;
+                }
+            });
+
+            // Formatação automática do valor do financiamento
+            document.getElementById('soma_segurada').addEventListener('input', function() {
+                let valor = this.value.replace(/[^\d]/g, ''); // Remove tudo exceto números
+                
+                if (valor === '') {
+                    this.value = '';
+                    return;
+                }
+                
+                // Converte para número e formata
+                const numero = parseFloat(valor) / 100; // Divide por 100 para centavos
+                this.value = numero.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            });
+
+            // Formatação inicial do valor
+            document.getElementById('soma_segurada').addEventListener('focus', function() {
+                if (this.value === 'R$ 100.000,00') {
+                    this.value = '100000';
+                }
+            });
+        });
+
+        // Função para calcular saldo devedor usando fórmula Price
+        function calcularSaldoDevedor(valorInicial, taxaMensal, periodoTotal, mesAtual) {
+            // Usar taxa efetiva mensal (como o Excel faz)
+            const pmt = valorInicial * taxaMensal / (1 - Math.pow(1 + taxaMensal, -periodoTotal));
+            const saldoDevedor = valorInicial * (Math.pow(1 + taxaMensal, periodoTotal) - Math.pow(1 + taxaMensal, mesAtual - 1)) / (Math.pow(1 + taxaMensal, periodoTotal) - 1);
+            return saldoDevedor;
+        }
+
+        // Função para calcular PMT usando fórmula Price
+        function calcularPMT(valorInicial, taxaMensal, periodoTotal) {
+            // Fórmula equivalente ao PGTO do Excel com tipo=0 (pagamento no final)
+            // PMT = PV × i / (1 - (1+i)^(-n))
+            const pmt = valorInicial * taxaMensal / (1 - Math.pow(1 + taxaMensal, -periodoTotal));
+            
+            // Debug: verificar se o cálculo está correto
+            console.log('=== DEBUG PMT ===');
+            console.log('Valor Inicial:', valorInicial);
+            console.log('Taxa Mensal (efetiva):', taxaMensal);
+            console.log('Período Total:', periodoTotal);
+            console.log('PMT Calculado:', pmt);
+            console.log('PMT Esperado (Excel):', 8856.21);
+            console.log('Diferença:', Math.abs(pmt - 8856.21));
+            console.log('================');
+            
+            return pmt;
+        }
+
+        // Função para calcular prêmio anual por idade (metodologia ChatGPT)
+        async function calcularPremioAnualPorIdade(idadeAtual, parcelaRestante, periodoTotal, taxaJurosAnual, valorInicial, sexo, tabua) {
+            // Usar taxa efetiva mensal (como o Excel faz)
+            const taxaMensal = Math.pow(1 + taxaJurosAnual/100, 1/12) - 1;
+            
+            // Calcular a partir da parcela restante atual (sem truncamento)
+            // Se restam 36 parcelas de 36 total, está na parcela 1
+            const parcelaAtual = periodoTotal - parcelaRestante + 1;
+            const mesesRestantes = parcelaRestante;
+            const mesesCobertos = Math.min(12, mesesRestantes);
+            
+            // Obter probabilidade de morte anual da idade atual usando a tábua real
+            const probMorteAnual = await obterProbabilidadeMorte(idadeAtual, sexo, tabua);
+            
+            // Converter probabilidade anual para mensal usando fórmula atuarial
+            const probMorteMensal = 1 - Math.pow(1 - probMorteAnual, 1/12);
+            
+            let premioAnual = 0;
+            const detalhes = [];
+            
+            // Calcular prêmio puro para os próximos 12 meses usando a fórmula correta
+            // A = Σ B_k × k-1 P_x × q_x+k-1 × v^k
+            let probSobrevivencia = 1.0; // Probabilidade de sobreviver até o início (k=1)
+            
+            for (let k = 1; k <= mesesCobertos; k++) {
+                const mesAtual = parcelaAtual + k - 1;
+                const saldoDevedor = calcularSaldoDevedor(valorInicial, taxaMensal, periodoTotal, mesAtual);
+                const fatorDesconto = Math.pow(1 / (1 + taxaMensal), k);
+                
+                // Probabilidade de morte no período k (dada a idade atual + k - 1)
+                const idadeMorte = idadeAtual + k - 1;
+                const probMortePeriodo = probMorteMensal; // Usando a mesma probabilidade mensal para simplificar
+                
+                // Contribuição: Saldo Devedor × Prob. Sobrevivência × Prob. Morte × Fator Desconto
+                const contribuicao = saldoDevedor * probSobrevivencia * probMortePeriodo * fatorDesconto;
+                premioAnual += contribuicao;
+                
+                // Salvar detalhes ANTES de atualizar a probabilidade de sobrevivência
+                detalhes.push({
+                    mes: k,
+                    mes_absoluto: mesAtual,
+                    saldo_devedor: saldoDevedor,
+                    probabilidade_sobrevivencia: probSobrevivencia, // Valor CORRETO antes da atualização
+                    probabilidade_morte_anual: probMorteAnual,
+                    probabilidade_morte_mensal: probMorteMensal,
+                    probabilidade_morte_periodo: probMortePeriodo,
+                    fator_desconto: fatorDesconto,
+                    contribuicao: contribuicao
+                });
+                
+                // Atualizar probabilidade de sobrevivência para o próximo período
+                // IMPORTANTE: Atualizar DEPOIS de salvar os detalhes
+                probSobrevivencia *= (1 - probMorteMensal);
+            }
+
+            // Converter prêmio puro anual em prêmio mensal nivelado POSTECIPADO
+            // Fórmula correta: P_mensal = A_anual / ax:12
+            // Onde ax:12 = Σ(k=1 to 12) v^k × kPx (anuidade atuarial POSTECIPADA)
+            let premioMensal;
+            if (taxaMensal === 0) {
+                premioMensal = premioAnual / mesesCobertos;
+            } else {
+                // Calcular anuidade atuarial POSTECIPADA ax:12 = Σ(k=1 to 12) v^k × kPx
+                let anuidadeAtuarial = 0;
+                let probSobrevivenciaAnuidade = 1.0; // Probabilidade de sobreviver até o início (0Px = 100%)
+                
+                for (let k = 1; k <= mesesCobertos; k++) {
+                    const v = 1 / (1 + taxaMensal); // Fator de desconto
+                    const fatorDesconto = Math.pow(v, k);
+                    
+                    // Para anuidade POSTECIPADA: usar kPx (sobreviver k períodos completos)
+                    // kPx = k-1Px × (1 - qx+k-1) = probSobrevivenciaAnuidade × (1 - probMorteMensal)
+                    const probSobrevivenciaKPeriodos = probSobrevivenciaAnuidade * (1 - probMorteMensal);
+                    
+                    // Contribuição: v^k × kPx
+                    anuidadeAtuarial += fatorDesconto * probSobrevivenciaKPeriodos;
+                    
+                    // Atualizar probabilidade de sobrevivência para o próximo período
+                    probSobrevivenciaAnuidade *= (1 - probMorteMensal);
+                }
+                
+                // Prêmio mensal = Prêmio anual / Anuidade atuarial
+                premioMensal = premioAnual / anuidadeAtuarial;
+            }
+
+            const pmt = calcularPMT(valorInicial, taxaMensal, periodoTotal);
+            
+            // Calcular saldo devedor na parcela atual
+            const saldoDevedorAtual = calcularSaldoDevedor(valorInicial, taxaMensal, periodoTotal, parcelaAtual);
+            
+            // Taxa de risco anual = Prêmio Anual / Saldo Devedor Atual
+            const taxaRiscoAnual = (premioAnual / saldoDevedorAtual) * 100;
+            
+            // Taxa de risco mensal = Prêmio Mensal / Saldo Devedor Atual
+            const taxaRiscoMensal = (premioMensal / saldoDevedorAtual) * 100;
+            
+            return {
+                premio_anual: premioAnual,
+                premio_mensal: premioMensal,
+                taxa_risco_anual: taxaRiscoAnual,
+                taxa_risco_mensal: taxaRiscoMensal,
+                meses_cobertos: mesesCobertos,
+                idade_atual: idadeAtual,
+                saldo_devedor_atual: saldoDevedorAtual,
+                detalhes: detalhes,
+                pmt_financiamento: pmt,
+                taxa_mensal: taxaMensal,
+                prob_morte_anual: probMorteAnual,
+                prob_morte_mensal: probMorteMensal
+            };
+        }
+
+        
+        // Função para obter probabilidade de morte da tábua real via servidor
+        async function obterProbabilidadeMorte(idade, sexo, tabua) {
+            try {
+                // Usar dados internos das tábuas
+                return obterProbabilidadeMorteInterna(idade, sexo, tabua);
+            } catch (error) {
+                console.error('Erro ao obter probabilidade:', error);
+                return obterProbabilidadeMorteSimulada(idade, sexo, tabua);
+            }
+        }
+        
+        // Função simulada como fallback
+        function obterProbabilidadeMorteSimulada(idade, sexo, tabua) {
+            // Fatores baseados no tipo de tábua selecionada
+            let fatorTabua = 1.0;
+            let baseProb = 0.001; // Base de 0.1%
+            
+            if (tabua && tabua.toLowerCase().includes('at2000')) {
+                fatorTabua = 0.8; // Tábua AT2000 é mais conservadora
+                baseProb = 0.0008;
+            } else if (tabua && tabua.toLowerCase().includes('br-emsb')) {
+                fatorTabua = 1.2; // Tábua BR-EMSB é mais agressiva
+                baseProb = 0.0012;
+            } else if (tabua && tabua.toLowerCase().includes('padrão')) {
+                fatorTabua = 1.0; // Tábua padrão
+                baseProb = 0.001;
+            }
+            
+            // Cálculo baseado na idade (exponencial)
+            const probBase = baseProb * Math.pow(1.08, idade - 18);
+            
+            // Fator por sexo
+            const fatorSexo = sexo === 'M' ? 1.3 : 0.8;
+            
+            // Aplicar fator da tábua
+            const probFinal = probBase * fatorSexo * fatorTabua;
+            
+            // Limitar entre 0.01% e 15%
+            return Math.max(0.0001, Math.min(probFinal, 0.15));
+        }
+        
+        // Função para atualizar a memória de cálculo com probabilidades corretas
+        function atualizarMemoriaComProbabilidades(probMorteAnual, probMorteMensal) {
+            // Atualizar campos na memória de cálculo
+            const probMorteAnualElement = document.getElementById('probMorteAnualDetalhado');
+            const probMorteMensalElement = document.getElementById('probMorteMensalDetalhado');
+            
+            if (probMorteAnualElement) {
+                probMorteAnualElement.textContent = `${(probMorteAnual * 100).toFixed(6)}%`;
+            }
+            
+            if (probMorteMensalElement) {
+                probMorteMensalElement.textContent = `${(probMorteMensal * 100).toFixed(6)}%`;
+            }
+            
+            // Atualizar cálculo detalhado da probabilidade mensal
+            const calculoDetalhado = document.getElementById('calculoProbabilidadeDetalhado');
+            if (calculoDetalhado) {
+                const passo1 = probMorteAnual;
+                const passo2 = 1 - probMorteAnual;
+                const passo3 = Math.pow(passo2, 1/12);
+                const passo4 = 1 - passo3;
+
+                calculoDetalhado.innerHTML = `
+                    <p class="mb-2"><strong>Passo 1:</strong> q_anual = ${(probMorteAnual * 100).toFixed(6)}%</p>
+                    <p class="mb-2"><strong>Passo 2:</strong> (1 - q_anual) = 1 - ${(probMorteAnual * 100).toFixed(6)}% = ${(passo2 * 100).toFixed(6)}%</p>
+                    <p class="mb-2"><strong>Passo 3:</strong> (1 - q_anual)^(1/12) = ${(passo2 * 100).toFixed(6)}%^(1/12) = ${(passo3 * 100).toFixed(6)}%</p>
+                    <p class="mb-2"><strong>Passo 4:</strong> q_mensal = 1 - ${(passo3 * 100).toFixed(6)}% = <strong>${(passo4 * 100).toFixed(6)}%</strong></p>
+                    <div class="alert alert-success mt-2 mb-0">
+                        <strong>Resultado Final:</strong> q_mensal = ${(probMorteMensal * 100).toFixed(6)}%
+                    </div>
+                `;
+            }
+        }
+
+        function carregarTabuas() {
+            console.log('Função carregarTabuas chamada');
+            try {
+                // Usar dados internos das tábuas
+                const tabuas = obterTabuasDisponiveis();
+                const tabuaPadrao = obterTabuaPadrao();
+                const selectTabua = document.getElementById('tabua');
+                
+                console.log('Tábuas disponíveis:', tabuas);
+                console.log('Tábua padrão:', tabuaPadrao);
+                
+                selectTabua.innerHTML = ''; // Limpar opções existentes
+                
+                tabuas.forEach(tabua => {
+                    const option = document.createElement('option');
+                    option.value = tabua;
+                    option.textContent = tabua;
+                    if (tabua === tabuaPadrao) {
+                        option.selected = true;
+                    }
+                    selectTabua.appendChild(option);
+                });
+                
+                console.log('Tábuas carregadas com sucesso!');
+            } catch (error) {
+                console.error('Erro ao carregar tábuas:', error);
+                // Fallback para tábua padrão
+                const selectTabua = document.getElementById('tabua');
+                selectTabua.innerHTML = '<option value="AT-83">AT-83</option>';
+            }
+        }
+
+        // Formulário de cálculo
+        document.getElementById('calculatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculate();
+        });
+
+        async function calculate() {
+            // Obter dados do formulário
+            const idadeAtual = parseInt(document.getElementById('idade_atual').value);
+            const parcelaRestante = parseInt(document.getElementById('parcela_atual').value);
+            const periodoTotal = parseInt(document.getElementById('periodo_total').value);
+            const sexo = document.getElementById('sexo').value;
+            const taxaJuros = parseFloat(document.getElementById('taxa_juros').value);
+            // Extrair valor numérico do campo formatado
+            const somaSeguradaStr = document.getElementById('soma_segurada').value;
+            const somaSegurada = parseFloat(somaSeguradaStr.replace(/[^\d,]/g, '').replace(',', '.'));
+            const tabua = document.getElementById('tabua').value;
+
+            // Validação dos limites
+            if (idadeAtual < 0 || idadeAtual > 100 || !Number.isInteger(idadeAtual)) {
+                alert('A idade deve ser um número inteiro entre 0 e 100 anos.');
+                return;
+            }
+
+            if (parcelaRestante < 1 || parcelaRestante > periodoTotal || !Number.isInteger(parcelaRestante)) {
+                alert('As parcelas restantes devem estar entre 1 e o período total.');
+                return;
+            }
+
+            if (periodoTotal < 1 || periodoTotal > 120 || !Number.isInteger(periodoTotal)) {
+                alert('O período total deve ser um número inteiro entre 1 e 120 meses.');
+                return;
+            }
+
+            if (taxaJuros < 0 || taxaJuros > 30) {
+                alert('A taxa de juros deve estar entre 0% e 30%.');
+                return;
+            }
+
+            if (isNaN(somaSegurada) || somaSegurada < 1 || somaSegurada > 500000) {
+                alert('O valor do financiamento deve estar entre R$ 1,00 e R$ 500.000,00.');
+                return;
+            }
+
+            // Verificar se ainda há meses restantes
+            if (parcelaRestante > periodoTotal) {
+                alert('As parcelas restantes não podem ser maiores que o período total.');
+                return;
+            }
+
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('detailedResults').style.display = 'none';
+            
+            // Ocultar memória de cálculo se estiver visível
+            document.getElementById('memoriaCalculoSection').style.display = 'none';
+
+            // Calcular dados para os próximos 12 meses
+            // Se restam 36 parcelas de 36 total, está na parcela 1
+            const parcelaAtual = periodoTotal - parcelaRestante + 1;
+            const mesesRestantes = parcelaRestante;
+            const mesesCobertos = Math.min(12, mesesRestantes);
+            
+            // Enviar dados para o servidor Python
+            const data = {
+                idade_atual: idadeAtual,
+                parcela_restante: parcelaRestante,
+                periodo_total: periodoTotal,
+                sexo: sexo,
+                taxa_juros: taxaJuros,
+                soma_segurada: somaSegurada,
+                tabua_mortalidade: tabua,
+                meses_cobertos: mesesCobertos
+            };
+
+            // Calcular localmente usando a nova lógica
+            try {
+                const resultado = await calcularPremioAnualPorIdade(
+                    idadeAtual, 
+                    parcelaRestante, 
+                    periodoTotal, 
+                    taxaJuros, 
+                    somaSegurada, 
+                    sexo, 
+                    tabua
+                );
+                
+                // Formatar resultado para compatibilidade
+                
+                const result = {
+                    success: true,
+                    valor_anual: `R$ ${resultado.premio_anual.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+                    valor_mensal: `R$ ${resultado.premio_mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+                    taxa_risco_anual: resultado.taxa_risco_anual,
+                    taxa_risco_mensal: resultado.taxa_risco_mensal,
+                    idade_atual: resultado.idade_atual,
+                    meses_cobertos: resultado.meses_cobertos,
+                    parcela_restante: parcelaRestante,
+                    periodo_total: periodoTotal,
+                    prob_morte_anual: resultado.prob_morte_anual,
+                    prob_morte_mensal: resultado.prob_morte_mensal,
+                    detalhes: {
+                        dados_entrada: {
+                            idade_atual: idadeAtual,
+                            parcela_restante: parcelaRestante,
+                            periodo_total: periodoTotal,
+                            sexo: sexo,
+                            taxa_juros: taxaJuros,
+                            soma_segurada: somaSegurada,
+                            tabua: tabua
+                        },
+                        financiamento: {
+                            pmt_financiamento: `R$ ${resultado.pmt_financiamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
+                            taxa_mensal: `${(resultado.taxa_mensal * 100).toFixed(4)}%`
+                        },
+                        calculo_premio: {
+                            premio_anual: `R$ ${resultado.premio_anual.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
+                            premio_mensal: `R$ ${resultado.premio_mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
+                            percentual_mensal: `${resultado.taxa_risco_mensal.toFixed(4)}%`
+                        },
+                        evolucao_saldo: resultado.detalhes.map(d => ({
+                            periodo: d.mes,
+                            mes_absoluto: d.mes_absoluto,
+                            idade: idadeAtual,
+                            saldo_devedor: d.saldo_devedor,
+                            pmt: resultado.pmt_financiamento,
+                            juros: 0, // Simplificado
+                            amortizacao: 0, // Simplificado
+                            probabilidade_sobrevivencia: d.probabilidade_sobrevivencia,
+                            probabilidade_morte_periodo: d.probabilidade_morte_periodo,
+                            probabilidade_morte_mensal: d.probabilidade_morte_mensal,
+                            fator_desconto: d.fator_desconto,
+                            valor_antes_desconto: d.saldo_devedor * d.probabilidade_sobrevivencia * d.probabilidade_morte_periodo,
+                            contribuicao: d.contribuicao
+                        }))
+                    }
+                };
+                
+                displayResults(result);
+                
+            } catch (error) {
+                console.error('Erro no cálculo:', error);
+                alert('Erro no cálculo: ' + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayResults(result) {
+            // Resultados principais - 4 quadros
+            document.getElementById('valorAnual').textContent = result.valor_anual || result.premio_anual || '-';
+            document.getElementById('percentualAnual').textContent = (result.taxa_risco_anual && typeof result.taxa_risco_anual === 'number') ? `${result.taxa_risco_anual.toFixed(5)}%` : '-';
+            document.getElementById('valorMensal').textContent = result.valor_mensal || result.premio_mensal || '-';
+            document.getElementById('percentualMensal').textContent = (result.taxa_risco_mensal && typeof result.taxa_risco_mensal === 'number') ? `${result.taxa_risco_mensal.toFixed(5)}%` : '-';
+
+            // Atualizar resumo do financiamento
+            if (result.detalhes) {
+                const financiamento = result.detalhes.financiamento;
+                const calculo = result.detalhes.calculo_premio;
+                
+                document.getElementById('resumoValorFinanciamento').textContent = `R$ ${result.detalhes.dados_entrada.soma_segurada.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                document.getElementById('resumoParcelaFinanciamento').textContent = financiamento.pmt_financiamento;
+                document.getElementById('resumoPremioMensal').textContent = result.valor_mensal;
+                document.getElementById('resumoTaxaSeguro').textContent = (result.taxa_risco_mensal && typeof result.taxa_risco_mensal === 'number') ? `${result.taxa_risco_mensal.toFixed(5)}%` : '-';
+                
+                document.getElementById('resumoFinanciamento').style.display = 'block';
+            }
+
+            // Mostrar seção de resultados (já está sempre visível, apenas adicionar animação)
+            document.getElementById('resultsSection').classList.add('fade-in');
+
+            // Preparar dados para memória de cálculo
+            window.currentResults = result;
+        }
+
+
+        // Botão de memória de cálculo
+        const btnMemoriaCalculo = document.getElementById('btnMemoriaCalculo');
+        
+        if (btnMemoriaCalculo) {
+            btnMemoriaCalculo.addEventListener('click', function() {
+                if (window.currentResults) {
+                    displayMemoriaCalculo(window.currentResults);
+                } else {
+                    alert('Erro: Nenhum resultado disponível. Execute um cálculo primeiro.');
+                }
+            });
+        }
+
+        // Botão de reserva matemática
+        const btnReservaMatematica = document.getElementById('btnReservaMatematica');
+        
+        if (btnReservaMatematica) {
+            btnReservaMatematica.addEventListener('click', function() {
+                if (window.currentResults) {
+                    // Mostrar seção de reserva matemática
+                    document.getElementById('reservaMatematicaSection').style.display = 'block';
+                    document.getElementById('reservaMatematicaSection').classList.add('fade-in');
+                    
+                    // Configurar período total
+                    const periodo = window.currentResults.detalhes.dados_entrada.periodo;
+                    document.getElementById('periodoTotal').value = `${periodo} meses`;
+                    document.getElementById('tempoT').max = periodo;
+                    
+                    // Scroll para a seção
+                    document.getElementById('reservaMatematicaSection').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('Erro: Nenhum resultado disponível. Execute um cálculo primeiro.');
+                }
+            });
+        }
+
+        // Botão calcular reserva
+        const btnCalcularReserva = document.getElementById('btnCalcularReserva');
+        
+        if (btnCalcularReserva) {
+            btnCalcularReserva.addEventListener('click', function() {
+                calcularReservaMatematica();
+            });
+        }
+
+        function displayDetailedResults(result) {
+            const detalhes = result.detalhes;
+
+            // Valores do financiamento
+            const financiamento = detalhes.financiamento;
+            document.getElementById('valorFinanciamento').textContent = `R$ ${detalhes.dados_entrada.soma_segurada}`;
+            document.getElementById('taxaMensal').textContent = financiamento.taxa_mensal;
+            document.getElementById('numParcelas').textContent = financiamento.num_parcelas;
+            document.getElementById('parcelaFinanciamento').textContent = financiamento.pmt_financiamento;
+
+            // Valores do seguro
+            const calculo = detalhes.calculo_premio;
+            document.getElementById('resultadoPremioUnico').textContent = calculo.premio_unico;
+            document.getElementById('resultadoPremioMensal').textContent = calculo.premio_mensal;
+            document.getElementById('premioMensalTaxa').textContent = calculo.premio_mensal;
+            document.getElementById('pmtFinanciamentoTaxa').textContent = financiamento.pmt_financiamento;
+            document.getElementById('resultadoTaxaMensal').textContent = calculo.percentual_mensal;
+
+            // Preencher detalhes do Prêmio Anual
+            document.getElementById('valorFinanciamentoDetalhado').textContent = `R$ ${detalhes.dados_entrada.soma_segurada}`;
+            document.getElementById('taxaMensalDetalhado').textContent = financiamento.taxa_mensal;
+            document.getElementById('parcelaRestanteDetalhado').textContent = detalhes.dados_entrada.parcela_restante;
+            
+            // Calcular fator de desconto usando taxa efetiva
+            const taxaAnual = detalhes.dados_entrada.taxa_juros; // Usar a taxa anual original
+            const taxaMensalNum = Math.pow(1 + taxaAnual/100, 1/12) - 1;
+            const fatorDesconto = 1 / (1 + taxaMensalNum);
+            document.getElementById('fatorDescontoDetalhado').textContent = fatorDesconto.toFixed(6);
+            
+            document.getElementById('idadeAtualDetalhado').textContent = detalhes.dados_entrada.idade_atual;
+            document.getElementById('sexoDetalhado').textContent = detalhes.dados_entrada.sexo;
+            
+            // Preencher probabilidades de morte (se disponíveis no resultado)
+            if (result.prob_morte_anual !== undefined) {
+                document.getElementById('probMorteAnualDetalhado').textContent = `${(result.prob_morte_anual * 100).toFixed(4)}%`;
+            } else {
+                document.getElementById('probMorteAnualDetalhado').textContent = '-';
+            }
+            
+            if (result.prob_morte_mensal !== undefined) {
+                document.getElementById('probMorteMensalDetalhado').textContent = `${(result.prob_morte_mensal * 100).toFixed(6)}%`;
+            } else {
+                document.getElementById('probMorteMensalDetalhado').textContent = '-';
+            }
+            
+            // Se restam 36 parcelas de 36 total, está na parcela 1
+            const parcelaAtual = detalhes.dados_entrada.periodo_total - detalhes.dados_entrada.parcela_restante + 1;
+            document.getElementById('mesesCobertosDetalhado').textContent = result.meses_cobertos || Math.min(12, detalhes.dados_entrada.parcela_restante);
+            document.getElementById('tabuaDetalhado').textContent = detalhes.dados_entrada.tabua;
+
+            // Preencher detalhes do Prêmio Mensal
+            document.getElementById('premioUnicoDetalhado').textContent = calculo.premio_anual;
+            
+            // Para o cálculo por idade, a anuidade é simplesmente 12 meses
+            const mesesCobertos = result.meses_cobertos || Math.min(12, detalhes.dados_entrada.parcela_restante);
+            document.getElementById('anuidadeMensalDetalhado').textContent = mesesCobertos.toFixed(0);
+            
+            document.getElementById('fatorDescontoMensal').textContent = fatorDesconto.toFixed(6);
+            document.getElementById('numParcelasMensal').textContent = financiamento.num_parcelas;
+            document.getElementById('taxaMensalDetalhado2').textContent = financiamento.taxa_mensal;
+            document.getElementById('pmtFinanciamentoDetalhado').textContent = financiamento.pmt_financiamento;
+            document.getElementById('taxaSeguroDetalhado').textContent = calculo.percentual_mensal;
+            
+            // Calcular economia vs seguro normal (aproximação)
+            const premioMensalNum = parseFloat(calculo.premio_mensal.replace(/[^\d,.-]/g, '').replace(',', '.'));
+            const pmtFinanciamentoNum = parseFloat(financiamento.pmt_financiamento.replace(/[^\d,.-]/g, '').replace(',', '.'));
+            const percentualSeguro = (premioMensalNum / pmtFinanciamentoNum) * 100;
+            const economiaEstimada = Math.max(0, 100 - percentualSeguro);
+            document.getElementById('economiaSeguro').textContent = `${economiaEstimada.toFixed(1)}% menor que seguro tradicional`;
+
+            // Preencher evolução do saldo devedor
+            if (detalhes.evolucao_saldo) {
+                preencherEvolucaoSaldo(detalhes.evolucao_saldo);
+            }
+
+            // Mostrar seção detalhada
+            const detailedResults = document.getElementById('detailedResults');
+            detailedResults.style.display = 'block';
+            detailedResults.classList.add('fade-in');
+
+            // Re-renderizar MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+        }
+
+        function preencherEvolucaoSaldo(evolucao) {
+            const tbody = document.getElementById('evolucaoSaldoBody');
+            tbody.innerHTML = '';
+
+            evolucao.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Destacar o primeiro e último mês
+                if (item.periodo === 1) {
+                    row.classList.add('table-success');
+                } else if (item.periodo === evolucao.length) {
+                    row.classList.add('table-warning');
+                }
+                
+                // Usar probabilidade mensal se disponível, senão usar a anual
+                const probMorte = item.probabilidade_morte_mensal || item.prob_morte || 0;
+                const valorAntesDesconto = item.saldo_devedor * probMorte;
+                
+                row.innerHTML = `
+                    <td><strong>${item.periodo}</strong></td>
+                    <td>${item.mes_absoluto || (item.periodo + (window.currentResults?.detalhes?.dados_entrada?.periodo_total || 36) - (window.currentResults?.detalhes?.dados_entrada?.parcela_restante || 36) + 1 - 1)}</td>
+                    <td>R$ ${item.saldo_devedor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td>${(probMorte * 100).toFixed(6)}%</td>
+                    <td>${item.fator_desconto.toFixed(6)}</td>
+                    <td>R$ ${valorAntesDesconto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td><strong>R$ ${item.contribuicao.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Preencher resumo da evolução
+            if (evolucao.length > 0) {
+                const totalMeses = evolucao.length;
+                const saldoInicial = evolucao[0].saldo_devedor;
+                const saldoFinal = evolucao[evolucao.length - 1].saldo_devedor;
+                const reducaoTotal = saldoInicial - saldoFinal;
+                
+                // Calcular soma das contribuições
+                const somaContribuicoes = evolucao.reduce((total, item) => total + item.contribuicao, 0);
+
+                document.getElementById('totalMeses').textContent = totalMeses;
+                document.getElementById('saldoInicial').textContent = `R$ ${saldoInicial.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('saldoFinal').textContent = `R$ ${saldoFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('reducaoTotal').textContent = `R$ ${reducaoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('somaContribuicoes').textContent = `R$ ${somaContribuicoes.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                
+                document.getElementById('resumoEvolucao').style.display = 'block';
+            }
+            
+            // Preencher detalhes da Taxa de Quitação de Risco (NOVO - sem mexer no botão)
+            if (window.currentResults && window.currentResults.detalhes) {
+                const financiamento = window.currentResults.detalhes.financiamento;
+                const calculo = window.currentResults.detalhes.calculo_premio;
+                
+                // Extrair valores dos dados
+                const valorFinanciado = parseFloat(window.currentResults.detalhes.dados_entrada.soma_segurada.replace('R$ ', '').replace(',', ''));
+                const premioUnico = parseFloat(calculo.premio_unico.replace('R$ ', '').replace(',', ''));
+                const valorLiquido = -(valorFinanciado - premioUnico); // Valor negativo para TAXA
+                const pmt = parseFloat(financiamento.pmt_financiamento.replace('R$ ', '').replace(',', ''));
+                const nper = financiamento.num_parcelas;
+                const taxaJurosMensal = parseFloat(financiamento.taxa_mensal.replace('%', '')) / 100;
+                const taxaQuitacao = parseFloat(window.currentResults.taxa_quitação_risco_mensal.replace('%', '')) / 100;
+                
+                // Preencher tabela de parâmetros
+                document.getElementById('valorFinanciadoQuitacao').textContent = `R$ ${valorFinanciado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('premioUnicoQuitacao').textContent = `R$ ${premioUnico.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('valorLiquidoQuitacao').textContent = `R$ ${valorLiquido.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('pmtQuitacao').textContent = `R$ ${pmt.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                document.getElementById('nperQuitacao').textContent = `${nper} meses`;
+                document.getElementById('taxaJurosMensalQuitacao').textContent = `${(taxaJurosMensal * 100).toFixed(4)}%`;
+                
+                // Preencher resultado detalhado
+                document.getElementById('resultadoQuitacaoDetalhado').textContent = `${(taxaQuitacao * 100).toFixed(4)}%`;
+            }
+        }
+
+        async function displayProjecoes(result) {
+            const tbody = document.getElementById('tabelaProjecoesBody');
+            tbody.innerHTML = '';
+
+            const dados = result.detalhes.dados_entrada;
+            const idadeAtual = dados.idade_atual;
+            const parcelaRestante = dados.parcela_restante;
+            const periodoTotal = dados.periodo_total;
+            const taxaJuros = dados.taxa_juros;
+            const valorInicial = dados.soma_segurada;
+            const sexo = dados.sexo;
+            const tabua = dados.tabua;
+
+            // Calcular quantos anos completos restam
+            // Se restam 36 parcelas de 36 total, está na parcela 1
+            const parcelaAtual = periodoTotal - parcelaRestante + 1;
+            const mesesRestantes = parcelaRestante;
+            const anosRestantes = Math.ceil(mesesRestantes / 12);
+
+            for (let ano = 1; ano <= anosRestantes; ano++) {
+                const idadeAno = idadeAtual + ano - 1;
+                const parcelaInicioAno = parcelaAtual + (ano - 1) * 12;
+                const mesesAno = Math.min(12, periodoTotal - parcelaInicioAno + 1);
+
+                if (parcelaInicioAno <= periodoTotal) {
+                    const resultadoAno = await calcularPremioAnualPorIdade(
+                        idadeAno,
+                        parcelaInicioAno,
+                        periodoTotal,
+                        taxaJuros,
+                        valorInicial,
+                        sexo,
+                        tabua
+                    );
+
+                    const row = document.createElement('tr');
+                    
+                    // Destacar o ano atual
+                    if (ano === 1) {
+                        row.classList.add('table-success');
+                    }
+
+                    row.innerHTML = `
+                        <td><strong>${ano}</strong></td>
+                        <td>${idadeAno} anos</td>
+                        <td>${parcelaInicioAno} a ${Math.min(parcelaInicioAno + mesesAno - 1, periodoTotal)}</td>
+                        <td>R$ ${resultadoAno.premio_mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>${resultadoAno.taxa_seguro.toFixed(3)}%</td>
+                        <td>R$ ${resultadoAno.premio_anual.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            }
+
+            // Mostrar seção de projeções
+            const projecoesSection = document.getElementById('projecoesSection');
+            projecoesSection.style.display = 'block';
+            projecoesSection.classList.add('fade-in');
+
+            // Scroll para a seção
+            projecoesSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function calcularReservaMatematica() {
+            if (!window.currentResults) {
+                alert('Erro: Nenhum resultado disponível. Execute um cálculo primeiro.');
+                return;
+            }
+
+            const tempoT = parseInt(document.getElementById('tempoT').value);
+            const periodo = window.currentResults.detalhes.dados_entrada.periodo;
+
+            // Validação
+            if (isNaN(tempoT) || tempoT < 0 || tempoT > periodo) {
+                alert(`O tempo t deve estar entre 0 e ${periodo} meses.`);
+                return;
+            }
+
+            // Mostrar loading
+            const btnCalcular = document.getElementById('btnCalcularReserva');
+            const textoOriginal = btnCalcular.innerHTML;
+            btnCalcular.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculando...';
+            btnCalcular.disabled = true;
+
+            // Preparar dados para envio
+            const dadosReserva = {
+                idade: window.currentResults.detalhes.dados_entrada.idade_inicial || window.currentResults.detalhes.dados_entrada.idade,
+                sexo: window.currentResults.detalhes.dados_entrada.sexo === 'Masculino' ? 'M' : 'F',
+                periodo: periodo,
+                taxa_juros: parseFloat(window.currentResults.detalhes.dados_entrada.taxa_juros.replace('%', '')),
+                soma_segurada: parseFloat(window.currentResults.detalhes.dados_entrada.soma_segurada.replace('R$ ', '').replace(',', '')),
+                tabua_mortalidade: window.currentResults.detalhes.dados_entrada.tabua,
+                tempo_t: tempoT
+            };
+
+            // Enviar para o servidor
+            fetch('/calcular_reserva_matematica', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(dadosReserva)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    displayReservaMatematica(result);
+                } else {
+                    alert('Erro no cálculo da reserva matemática: ' + result.error);
+                }
+            })
+            .catch(error => {
+                alert('Erro na comunicação com o servidor: ' + error.message);
+            })
+            .finally(() => {
+                btnCalcular.innerHTML = textoOriginal;
+                btnCalcular.disabled = false;
+            });
+        }
+
+        function displayReservaMatematica(result) {
+            // Mostrar resultados
+            document.getElementById('resultadosReserva').style.display = 'block';
+            document.getElementById('resultadosReserva').classList.add('fade-in');
+
+            // Preencher valores principais
+            document.getElementById('valorReservaMatematica').textContent = result.reserva_matematica;
+            document.getElementById('valorPresenteBeneficios').textContent = result.valor_presente_beneficios;
+            document.getElementById('valorPresentePremios').textContent = result.valor_presente_premios;
+            document.getElementById('premioMensalDebug').textContent = result.premio_mensal || 'N/A';
+            document.getElementById('explicacaoReserva').textContent = result.explicacao;
+
+            // Preencher situação atual
+            const situacao = result.detalhes.situacao_atual;
+            document.getElementById('idadeAtualReserva').textContent = `${situacao.idade_atual.toFixed(2)} anos`;
+            document.getElementById('periodoRestanteReserva').textContent = `${situacao.periodo_restante} meses`;
+            document.getElementById('saldoDevedorAtual').textContent = situacao.saldo_devedor_atual;
+            document.getElementById('valorSeguradoAtual').textContent = situacao.valor_segurado_atual;
+
+            // Preencher tabela detalhada
+            preencherTabelaReservaDetalhada(result.detalhes.calculo_detalhado);
+
+            // Preencher resumo
+            document.getElementById('resumoPeriodoRestante').textContent = `${situacao.periodo_restante} meses`;
+            document.getElementById('resumoSaldoDevedor').textContent = situacao.saldo_devedor_atual;
+            document.getElementById('resumoValorReserva').textContent = result.reserva_matematica;
+            document.getElementById('resumoReserva').style.display = 'block';
+
+            // Re-renderizar MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+        }
+
+        function preencherTabelaReservaDetalhada(calculoDetalhado) {
+            const tbody = document.getElementById('tabelaReservaDetalhadaBody');
+            tbody.innerHTML = '';
+
+            calculoDetalhado.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Destacar o primeiro mês
+                if (item.mes === 1) {
+                    row.classList.add('table-success');
+                }
+                
+                row.innerHTML = `
+                    <td><strong>${item.mes}</strong></td>
+                    <td>${item.idade.toFixed(2)}</td>
+                    <td>R$ ${item.saldo_devedor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td>R$ ${item.premio.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td>${(item.k_t_p_x_t * 100).toFixed(4)}%</td>
+                    <td>${(item.k_t_1_q_x_t * 100).toFixed(6)}%</td>
+                    <td>${item.fator_desconto.toFixed(6)}</td>
+                    <td><strong>R$ ${item.contribuicao_beneficios.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
+                    <td>R$ ${item.contribuicao_premios.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function displayMemoriaCalculo(result) {
+            const detalhes = result.detalhes;
+            const dados = detalhes.dados_entrada;
+            const financiamento = detalhes.financiamento;
+            const calculo = detalhes.calculo_premio;
+            const evolucao = detalhes.evolucao_saldo;
+
+            // Preencher parâmetros de entrada
+            const tbodyEntrada = document.getElementById('parametrosEntrada');
+            tbodyEntrada.innerHTML = `
+                <tr><td><strong>Idade Atual</strong></td><td>${dados.idade_atual} anos</td></tr>
+                <tr><td><strong>Sexo</strong></td><td>${dados.sexo === 'M' ? 'Masculino' : 'Feminino'}</td></tr>
+                <tr><td><strong>Parcelas Restantes</strong></td><td>${dados.parcela_restante} meses</td></tr>
+                <tr><td><strong>Período Total</strong></td><td>${dados.periodo_total} meses</td></tr>
+                <tr><td><strong>Taxa Juros Anual</strong></td><td>${dados.taxa_juros}%</td></tr>
+                <tr><td><strong>Valor Financiamento</strong></td><td>R$ ${dados.soma_segurada.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td></tr>
+                <tr><td><strong>Tábua Mortalidade</strong></td><td>${dados.tabua}</td></tr>
+            `;
+
+            // Preencher parâmetros calculados
+            const tbodyCalculados = document.getElementById('parametrosCalculados');
+            // Usar taxa efetiva mensal (como o Excel faz)
+            const taxaAnual = dados.taxa_juros; // Usar a taxa anual original
+            const taxaMensal = Math.pow(1 + taxaAnual/100, 1/12) - 1;
+            
+            // Obter probabilidades do resultado atual
+            let probMorteAnual = result.prob_morte_anual || 0;
+            let probMorteMensal = result.prob_morte_mensal || 0;
+            
+            // Se não estão disponíveis no resultado, usar valores simulados como fallback
+            if (probMorteAnual === 0 && probMorteMensal === 0) {
+                probMorteAnual = obterProbabilidadeMorteSimulada(dados.idade_atual, dados.sexo, dados.tabua);
+                probMorteMensal = 1 - Math.pow(1 - probMorteAnual, 1/12);
+            }
+
+            // Preencher detalhes da tábua de mortalidade
+            const tbodyTabua = document.getElementById('detalhesTabua');
+            
+            // Determinar características da tábua selecionada
+            let caracteristicasTabua = "Tábua Padrão";
+            let fatorTabua = 1.0;
+            
+            if (dados.tabua && dados.tabua.toLowerCase().includes('at2000')) {
+                caracteristicasTabua = "Tábua AT2000 - Mais Conservadora";
+                fatorTabua = 0.8;
+            } else if (dados.tabua && dados.tabua.toLowerCase().includes('br-emsb')) {
+                caracteristicasTabua = "Tábua BR-EMSB - Mais Agressiva";
+                fatorTabua = 1.2;
+            } else if (dados.tabua && dados.tabua.toLowerCase().includes('padrão')) {
+                caracteristicasTabua = "Tábua Padrão - Neutra";
+                fatorTabua = 1.0;
+            }
+            
+            tbodyTabua.innerHTML = `
+                <tr><td><strong>Nome da Tábua</strong></td><td>${dados.tabua}</td></tr>
+                <tr><td><strong>Características</strong></td><td>${caracteristicasTabua}</td></tr>
+                <tr><td><strong>Fator da Tábua</strong></td><td>${fatorTabua.toFixed(1)}x</td></tr>
+                <tr><td><strong>Idade Consultada</strong></td><td>${dados.idade_atual} anos</td></tr>
+                <tr><td><strong>Sexo</strong></td><td>${dados.sexo === 'M' ? 'Masculino' : 'Feminino'}</td></tr>
+                <tr><td><strong>Prob. Morte Anual (q_x)</strong></td><td>${(probMorteAnual * 100).toFixed(6)}%</td></tr>
+                <tr><td><strong>Prob. Sobrevivência Anual</strong></td><td>${((1 - probMorteAnual) * 100).toFixed(6)}%</td></tr>
+                <tr><td><strong>Fonte</strong></td><td>Tábua de Mortalidade Brasileira</td></tr>
+            `;
+
+            // Preencher cálculo detalhado da probabilidade mensal
+            const calculoDetalhado = document.getElementById('calculoProbabilidadeDetalhado');
+            const passo1 = probMorteAnual;
+            const passo2 = 1 - probMorteAnual;
+            const passo3 = Math.pow(passo2, 1/12);
+            const passo4 = 1 - passo3;
+            
+            calculoDetalhado.innerHTML = `
+                <p class="mb-2"><strong>Passo 1:</strong> q_anual = ${(probMorteAnual * 100).toFixed(6)}%</p>
+                <p class="mb-2"><strong>Passo 2:</strong> (1 - q_anual) = 1 - ${(probMorteAnual * 100).toFixed(6)}% = ${(passo2 * 100).toFixed(6)}%</p>
+                <p class="mb-2"><strong>Passo 3:</strong> (1 - q_anual)^(1/12) = ${(passo2 * 100).toFixed(6)}%^(1/12) = ${(passo3 * 100).toFixed(6)}%</p>
+                <p class="mb-2"><strong>Passo 4:</strong> q_mensal = 1 - ${(passo3 * 100).toFixed(6)}% = <strong>${(passo4 * 100).toFixed(6)}%</strong></p>
+                <div class="alert alert-success mt-2 mb-0">
+                    <strong>Resultado Final:</strong> q_mensal = ${(probMorteMensal * 100).toFixed(6)}%
+                </div>
+            `;
+            
+            tbodyCalculados.innerHTML = `
+                <tr><td><strong>Taxa Mensal</strong></td><td>${(taxaMensal * 100).toFixed(4)}%</td></tr>
+                <tr><td><strong>PMT Financiamento</strong></td><td>${financiamento.pmt_financiamento}</td></tr>
+                <tr><td><strong>Prob. Morte Anual</strong></td><td>${(probMorteAnual * 100).toFixed(4)}%</td></tr>
+                <tr><td><strong>Prob. Morte Mensal</strong></td><td>${(probMorteMensal * 100).toFixed(6)}%</td></tr>
+                <tr><td><strong>Meses Cobertos</strong></td><td>${result.meses_cobertos || evolucao.length} meses</td></tr>
+                <tr><td><strong>Fator Desconto (v)</strong></td><td>${(1 / (1 + taxaMensal)).toFixed(6)}</td></tr>
+            `;
+
+            // Preencher memória de cálculo completa
+            let memoriaCompleta = `A_{anual} = `;
+            let somaAcumulada = 0;
+            
+            evolucao.forEach((item, index) => {
+                // Usar as probabilidades do item ou valores padrão
+                const probSobrevivencia = item.probabilidade_sobrevivencia || 1.0;
+                const probMortePeriodo = item.probabilidade_morte_periodo || item.probabilidade_morte_mensal || probMorteMensal;
+                const valorAntesDesconto = item.saldo_devedor * probSobrevivencia * probMortePeriodo;
+                const contribuicao = item.contribuicao;
+                somaAcumulada += contribuicao;
+                
+                if (index > 0) memoriaCompleta += ' + ';
+                memoriaCompleta += `(${item.saldo_devedor.toFixed(2)} × ${(probSobrevivencia * 100).toFixed(6)}% × ${(probMortePeriodo * 100).toFixed(6)}% × ${item.fator_desconto.toFixed(6)})`;
+                
+                if (index === evolucao.length - 1) {
+                    memoriaCompleta += ` = R$ ${somaAcumulada.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                }
+            });
+
+            document.getElementById('memoriaCalculoCompleta').innerHTML = `<code>${memoriaCompleta}</code>`;
+
+            // Preencher tabela detalhada
+            const tbodyMemoria = document.getElementById('tabelaMemoriaCalculoBody');
+            tbodyMemoria.innerHTML = '';
+            let somaAcumuladaTabela = 0;
+
+            evolucao.forEach((item, index) => {
+                const row = document.createElement('tr');
+                // Usar os valores corretos dos detalhes
+                const probSobrevivencia = item.probabilidade_sobrevivencia;
+                const probMortePeriodo = item.probabilidade_morte_periodo || item.probabilidade_morte_mensal || probMorteMensal;
+                const valorAntesDesconto = item.saldo_devedor * probSobrevivencia * probMortePeriodo;
+                const contribuicao = item.contribuicao;
+                somaAcumuladaTabela += contribuicao;
+                
+                // Destacar primeiro e último mês
+                if (index === 0) row.classList.add('table-success');
+                if (index === evolucao.length - 1) row.classList.add('table-warning');
+                
+                row.innerHTML = `
+                    <td><strong>${item.periodo}</strong></td>
+                    <td>${item.mes_absoluto || (item.periodo + (dados.periodo_total || 36) - (dados.parcela_restante || 36) + 1 - 1)}</td>
+                    <td>R$ ${item.saldo_devedor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td>${(probSobrevivencia * 100).toFixed(6)}%</td>
+                    <td>${(probMortePeriodo * 100).toFixed(6)}%</td>
+                    <td>${item.fator_desconto.toFixed(6)}</td>
+                    <td>R$ ${valorAntesDesconto.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td><strong>R$ ${contribuicao.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
+                    <td><strong>R$ ${somaAcumuladaTabela.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
+                `;
+                tbodyMemoria.appendChild(row);
+            });
+
+            // Preencher resultados finais
+            document.getElementById('resultadoSomatorioFinal').textContent = `R$ ${somaAcumulada.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('verificacaoMatematica').textContent = `R$ ${somaAcumulada.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+
+            // Preencher conversão para prêmio mensal usando anuidade atuarial
+            const premioAnual = parseFloat(calculo.premio_anual.replace('R$ ', '').replace(',', ''));
+            // Calcular anuidade atuarial POSTECIPADA ax:12 = Σ(k=1 to 12) v^k × kPx
+            // Para anuidade postecipada: pagamento no FINAL do período
+            // kPx = probabilidade de sobreviver k períodos completos
+            let anuidadeAtuarial = 0;
+            let probSobrevivenciaAnuidade = 1.0; // Probabilidade de sobreviver até o início (0Px = 100%)
+            const detalhesAnuidade = []; // Array para armazenar detalhes da anuidade
+            
+            for (let k = 1; k <= evolucao.length; k++) {
+                const v = 1 / (1 + taxaMensal); // Fator de desconto
+                const fatorDesconto = Math.pow(v, k);
+                
+                // Para anuidade POSTECIPADA: usar kPx (sobreviver k períodos completos)
+                // kPx = k-1Px × (1 - qx+k-1) = probSobrevivenciaAnuidade × (1 - probMorteMensal)
+                const probSobrevivenciaKPeriodos = probSobrevivenciaAnuidade * (1 - probMorteMensal);
+                
+                // Contribuição: v^k × kPx
+                const contribuicao = fatorDesconto * probSobrevivenciaKPeriodos;
+                anuidadeAtuarial += contribuicao;
+                
+                // Salvar detalhes para a tabela
+                detalhesAnuidade.push({
+                    periodo: k,
+                    fatorDesconto: fatorDesconto,
+                    probSobrevivencia: probSobrevivenciaKPeriodos, // kPx (sobreviver k períodos)
+                    contribuicao: contribuicao,
+                    somaAcumulada: anuidadeAtuarial
+                });
+                
+                // Atualizar probabilidade de sobrevivência para o próximo período
+                probSobrevivenciaAnuidade *= (1 - probMorteMensal);
+            }
+            
+            const premioMensal = premioAnual / anuidadeAtuarial;
+
+            document.getElementById('premioAnualMemoria').textContent = `R$ ${premioAnual.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('fatorAnuidadeMemoria').textContent = anuidadeAtuarial.toFixed(6);
+            document.getElementById('premioMensalMemoria').textContent = `R$ ${premioMensal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            
+            // Preencher tabela da anuidade atuarial
+            preencherTabelaAnuidadeAtuarial(detalhesAnuidade);
+            
+            // Preencher resultados finais da anuidade
+            document.getElementById('anuidadeAtuarialFinal').textContent = anuidadeAtuarial.toFixed(6);
+            document.getElementById('premioMensalFinal').textContent = `R$ ${premioMensal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+
+            // Preencher resumo executivo
+            document.getElementById('totalMesesMemoria').textContent = evolucao.length;
+            document.getElementById('saldoInicialMemoria').textContent = `R$ ${evolucao[0].saldo_devedor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('saldoFinalMemoria').textContent = `R$ ${evolucao[evolucao.length - 1].saldo_devedor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            const reducaoTotal = evolucao[0].saldo_devedor - evolucao[evolucao.length - 1].saldo_devedor;
+            document.getElementById('reducaoTotalMemoria').textContent = `R$ ${reducaoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('probAnualMemoria').textContent = `${(probMorteAnual * 100).toFixed(4)}%`;
+            document.getElementById('probMensalMemoria').textContent = `${(probMorteMensal * 100).toFixed(6)}%`;
+
+            // Mostrar seção de memória de cálculo
+            const memoriaSection = document.getElementById('memoriaCalculoSection');
+            memoriaSection.style.display = 'block';
+            memoriaSection.classList.add('fade-in');
+
+            // Scroll para a seção
+            memoriaSection.scrollIntoView({ behavior: 'smooth' });
+
+            // Re-renderizar MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+        }
+        
+        function preencherTabelaAnuidadeAtuarial(detalhesAnuidade) {
+            const tbody = document.getElementById('tabelaAnuidadeAtuarialBody');
+            tbody.innerHTML = '';
+            
+            detalhesAnuidade.forEach((item, index) => {
+                const row = document.createElement('tr');
+                
+                // Destacar primeiro e último período
+                if (index === 0) {
+                    row.classList.add('table-success');
+                } else if (index === detalhesAnuidade.length - 1) {
+                    row.classList.add('table-warning');
+                }
+                
+                row.innerHTML = `
+                    <td><strong>${item.periodo}</strong></td>
+                    <td>${item.fatorDesconto.toFixed(6)}</td>
+                    <td>${(item.probSobrevivencia * 100).toFixed(6)}%</td>
+                    <td>${item.contribuicao.toFixed(6)}</td>
+                    <td><strong>${item.somaAcumulada.toFixed(6)}</strong></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>

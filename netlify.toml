@@ -1,0 +1,39 @@
+[build]
+  # Netlify não precisa de build para sites estáticos
+  command = ""
+  publish = "."
+
+[build.environment]
+  # Não são necessárias variáveis de ambiente
+
+[[headers]]
+  # Configurações de cabeçalhos para melhor performance
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  # Cache para arquivos JavaScript
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  # Cache para arquivos CSS
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[redirects]]
+  # Redirecionar para index.html se não encontrar arquivo
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Configurações de deploy
+[deploy]
+  # Não são necessárias configurações especiais
+

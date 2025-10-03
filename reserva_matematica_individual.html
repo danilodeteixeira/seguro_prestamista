@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cálculo Reserva Matemática Individual - Seguro Prestamista</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- MathJax para fórmulas matemáticas -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Tábuas de mortalidade -->
+    <script src="tabuas_mortalidade.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    
+    <!-- Estilo para evitar flash de conteúdo não autenticado -->
+    <style>
+        body {
+            visibility: hidden;
+        }
+        body.authenticated {
+            visibility: visible;
+        }
+    </style>
+    
+    <!-- Script de verificação de autenticação -->
+    <script>
+        // Verificar autenticação
+        function checkAuthentication() {
+            const isAuthenticated = sessionStorage.getItem('authenticated') === 'true';
+            const loginTime = parseInt(sessionStorage.getItem('loginTime') || '0');
+            const lastActivity = parseInt(sessionStorage.getItem('lastActivity') || '0');
+            const currentTime = Date.now();
+            const sessionDuration = 8 * 60 * 60 * 1000; // 8 horas
+            const inactivityTimeout = 10 * 60 * 1000; // 10 minutos de inatividade
+            const maxSessionTime = 30 * 60 * 1000; // 30 minutos máximo
+            
+            if (!isAuthenticated) {
+                // Não autenticado - redirecionar IMEDIATAMENTE
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo máximo (30 minutos)
+            if (currentTime - loginTime >= maxSessionTime) {
+                // Sessão expirada por tempo máximo
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por tempo máximo (30 minutos). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo de inatividade (10 minutos)
+            if (currentTime - lastActivity >= inactivityTimeout) {
+                // Sessão expirada por inatividade
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por inatividade (10 minutos). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo total (8 horas)
+            if (currentTime - loginTime >= sessionDuration) {
+                // Sessão expirada por tempo total
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por tempo total (8 horas). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Sessão válida - atualizar última atividade
+            sessionStorage.setItem('lastActivity', currentTime.toString());
+            return true;
+        }
+        
+        // Executar verificação quando o DOM estiver carregado
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuthentication()) {
+                // Sessão válida - mostrar conteúdo
+                document.body.classList.add('authenticated');
+            }
+        });
+        
+        // Atualizar atividade a cada 5 minutos
+        setInterval(() => {
+            if (sessionStorage.getItem('authenticated') === 'true') {
+                sessionStorage.setItem('lastActivity', Date.now().toString());
+            }
+        }, 5 * 60 * 1000);
+    </script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --dark-color: #34495e;
+            --light-color: #ecf0f1;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            padding: 40px;
+            max-width: 1200px;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 3px solid var(--light-color);
+        }
+
+        .header-section h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .header-section p {
+            color: var(--dark-color);
+            font-size: 1.2rem;
+            margin-bottom: 0;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid var(--light-color);
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-section h3 i {
+            margin-right: 10px;
+            color: var(--secondary-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-calculate {
+            background: linear-gradient(135deg, var(--success-color), #2ecc71);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+            background: linear-gradient(135deg, #2ecc71, var(--success-color));
+        }
+
+        .btn-calculate:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            border: 2px solid var(--light-color);
+            display: none;
+        }
+
+        .results-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .results-section h3 i {
+            margin-right: 10px;
+            color: var(--success-color);
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--success-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--success-color);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            color: var(--secondary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--secondary-color);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            background: #e3f2fd;
+            border-color: var(--primary-color);
+        }
+
+        .file-upload-area.dragover {
+            background: #e3f2fd;
+            border-color: var(--success-color);
+        }
+
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--success-color);
+            color: white;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .back-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: #34495e;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info i {
+            margin-right: 8px;
+        }
+
+        .formula-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .formula-section h6 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .formula-box {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .formula-box code {
+            background: none;
+            color: white;
+            padding: 0;
+        }
+
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            background: var(--primary-color);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table td {
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+
+        .upload-info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .upload-info h6 {
+            color: var(--success-color);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .upload-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .formula-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid var(--light-color);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .formula-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .formula-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            margin: 10px 0;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid var(--secondary-color);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--dark-color);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .header-section h1 {
+                font-size: 2rem;
+            }
+            
+            .form-section, .results-section {
+                padding: 20px;
+            }
+
+            .upload-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Botão Voltar -->
+            <a href="index.html" class="back-button">
+                <i class="fas fa-arrow-left me-2"></i>
+                Voltar ao Menu Principal
+            </a>
+
+            <!-- Cabeçalho -->
+            <div class="header-section">
+                <h1><i class="fas fa-calculator me-3"></i>Cálculo Reserva Matemática Individual</h1>
+                <p>Calcule a reserva matemática do seguro prestamista com base no saldo devedor atual e planilha de taxas de risco</p>
+            </div>
+
+            <!-- Informações Importantes -->
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Importante:</strong> Esta calculadora determina a reserva matemática individual baseada no saldo devedor atual, parcelas restantes e planilha de taxas de risco. O arquivo XLSX deve ter a mesma estrutura da planilha gerada pela "Calculadora Coletiva".
+            </div>
+
+            <!-- Formulário de Entrada -->
+            <div class="form-section">
+                <h3><i class="fas fa-edit"></i>Dados de Entrada</h3>
+                
+                <form id="reservaForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Saldo Devedor Atual (R$)</label>
+                                <input type="number" class="form-control" id="saldoDevedor" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Quantidade de Parcelas Restantes</label>
+                                <input type="number" class="form-control" id="parcelasRestantes" min="1" max="480" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Idade do Mutuário</label>
+                                <input type="number" class="form-control" id="idade" min="18" max="100" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Sexo</label>
+                                <select class="form-select" id="sexo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Feminino</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">Situação</label>
+                                <select class="form-select" id="situacao" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="valido">Válido</option>
+                                    <option value="invalido">Inválido</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Tábua de Mortalidade</label>
+                                <select class="form-select" id="tabua" required>
+                                    <option value="">Carregando tábuas...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Taxa de Juros Anual</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="taxaJuros" step="0.01" min="0" max="50" value="6.5" required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload de Arquivo -->
+                    <div class="form-group">
+                        <label class="form-label">Planilha de Taxas de Risco (XLSX)</label>
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: var(--secondary-color);"></i>
+                            <h5>Arraste e solte o arquivo XLSX aqui</h5>
+                            <p>ou clique para selecionar</p>
+                            <input type="file" id="fileInput" accept=".xlsx" style="display: none;">
+                            <div class="file-info" id="fileInfo"></div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="button" class="btn btn-calculate me-2" id="calculateQuickBtn">
+                            <i class="fas fa-calculator me-2"></i>
+                            Calcular Reserva Matemática
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="viewMemoryBtn" style="display: none;">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Ver Memória de Cálculo
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Layout com 2 colunas: Inputs à esquerda, Resultados à direita -->
+            <div class="row mt-4" id="mainLayout" style="display: none;">
+                <!-- Coluna Esquerda: Inputs -->
+                <div class="col-md-5">
+                    <div class="card" style="position: sticky; top: 20px;">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Dados de Entrada</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Saldo Devedor:</strong>
+                                <p class="mb-1" id="displaySaldo">-</p>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Parcelas Restantes:</strong>
+                                <p class="mb-1" id="displayParcelas">-</p>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Idade:</strong>
+                                <p class="mb-1" id="displayIdade">-</p>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Sexo:</strong>
+                                <p class="mb-1" id="displaySexo">-</p>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Situação:</strong>
+                                <p class="mb-1" id="displaySituacao">-</p>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Tábua de Mortalidade:</strong>
+                                <p class="mb-1" id="displayTabua">-</p>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Taxa de Juros Anual:</strong>
+                                <p class="mb-1" id="displayTaxa">-</p>
+                            </div>
+                            <div class="text-center mt-4">
+                                <button type="button" class="btn btn-secondary w-100" id="viewMemoryBtn2">
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    Ver Memória de Cálculo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna Direita: Resultados -->
+                <div class="col-md-7">
+                    <!-- Loading -->
+                    <div class="loading" id="loading" style="display: none;">
+                        <i class="fas fa-spinner"></i>
+                        <p>Calculando reserva matemática...</p>
+                    </div>
+
+                    <!-- Resultados Rápidos (Método Otimizado) -->
+                    <div id="quickResults" style="display: none;">
+                        <h3><i class="fas fa-chart-line"></i>Resultados da Reserva Matemática</h3>
+                        <p class="text-muted"><small><i class="fas fa-bolt me-1"></i>Cálculo Otimizado (Vetorização NumPy)</small></p>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="result-card">
+                                    <div class="result-label">VABF - Valor Atual dos Benefícios Futuros</div>
+                                    <div class="result-value" id="vabfQuickResult">R$ 0,00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="result-card">
+                                    <div class="result-label">VACF - Valor Atual dos Custos Futuros</div>
+                                    <div class="result-value" id="vacfQuickResult">R$ 0,00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="result-card bg-success text-white">
+                                    <div class="result-label">Reserva Matemática (VABF - VACF)</div>
+                                    <div class="result-value" id="reservaQuickResult">R$ 0,00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memória de Cálculo Completa (oculta inicialmente) -->
+            <div class="results-section" id="memorySection" style="display: none;">
+                <h3><i class="fas fa-book"></i>Memória de Cálculo Completa</h3>
+                <p class="text-muted"><small><i class="fas fa-list me-1"></i>Cálculo Iterativo Detalhado</small></p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="result-card">
+                            <div class="result-label">VABF - Valor Atual dos Benefícios Futuros</div>
+                            <div class="result-value" id="vabfResult">R$ 0,00</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="result-card">
+                            <div class="result-label">VACF - Valor Atual dos Custos Futuros</div>
+                            <div class="result-value" id="vacfResult">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">Reserva Matemática (VABF - VACF)</div>
+                            <div class="result-value" id="reservaResult">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalhamento dos Cálculos -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">Detalhamento dos Cálculos</div>
+                            <div id="detalhamentoResult">
+                                <p>Os cálculos consideram:</p>
+                                <ul>
+                                    <li>Probabilidade de morte a cada mês baseada na tábua selecionada</li>
+                                    <li>Saldo devedor amortizado mensalmente (financiamento Price)</li>
+                                    <li>Taxas de risco mensais conforme planilha fornecida</li>
+                                    <li>Reavaliação anual da idade e taxas de risco</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quadro do Upload -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">📊 Quadro do Upload Realizado</div>
+                            <div id="quadroUpload">
+                                <p>Carregando informações do arquivo...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fórmulas Utilizadas -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">🧮 Fórmulas Utilizadas</div>
+                            <div id="formulasUtilizadas">
+                                <div class="formula-section">
+                                    <h6>VABF - Valor Atual dos Benefícios Futuros</h6>
+                                    <div class="text-center mb-3">
+                                        <div class="formula-display">
+                                            $$VABF = \sum_{t=1}^{m} B_{t-1} \times {}_{t-1}P_x \times q_{x+t-1} \times v^t$$
+                                        </div>
+                                    </div>
+                                    <p><strong>Onde:</strong></p>
+                                    <ul>
+                                        <li><strong>B_{t-1}</strong> = Saldo devedor no período t-1 (fórmula Price)</li>
+                                        <li><strong>_{t-1}P_x</strong> = Probabilidade de sobrevivência até t-1</li>
+                                        <li><strong>q_{x+t-1}</strong> = Probabilidade de morte no período t</li>
+                                        <li><strong>v^t</strong> = Fator de desconto para o período t</li>
+                                    </ul>
+                                    <p><strong>Fórmula do Saldo Devedor (Price):</strong></p>
+                                    <div class="text-center mb-3">
+                                        <div class="formula-display">
+                                            $$B_{t-1} = A \times \frac{1 - v^{m-t+1}}{i}$$
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="formula-section">
+                                    <h6>VACF - Valor Atual dos Custos Futuros</h6>
+                                    <div class="text-center mb-3">
+                                        <div class="formula-display">
+                                            $$VACF = \sum_{k=1}^{n} v^k \times P(k) \times \pi(k)$$
+                                        </div>
+                                    </div>
+                                    <p><strong>Onde:</strong></p>
+                                    <ul>
+                                        <li><strong>v^k</strong> = Fator de desconto para o período k</li>
+                                        <li><strong>P(k)</strong> = Probabilidade de sobrevivência até k</li>
+                                        <li><strong>π(k)</strong> = Prêmio (taxa de risco × saldo devedor) no mês k</li>
+                                    </ul>
+                                </div>
+
+                                <div class="formula-section">
+                                    <h6>Reserva Matemática</h6>
+                                    <div class="text-center mb-3">
+                                        <div class="formula-display">
+                                            $$V(t) = VABF - VACF$$
+                                        </div>
+                                    </div>
+                                    <p>Diferença entre o valor presente dos benefícios futuros e o valor presente dos custos futuros.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tábua de Cálculo Mês a Mês -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">📈 Tábua de Cálculo Mês a Mês</div>
+                            <div id="tabuaCalculo">
+                                <p>Carregando tábua de cálculo...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quadro de Cálculo P_{t} -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">🧮 Cálculo Detalhado da Coluna P_{t}</div>
+                            <div id="quadroCalculoPt">
+                                <p>Carregando quadro de cálculo...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalhamento dos Cálculos -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">📊 Detalhamento dos Cálculos</div>
+                            <div id="detalhamentoCalculos">
+                                <div class="formula-container">
+                                    <h5 class="formula-title">🔢 Conversão de Taxa Anual para Mensal</h5>
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-calculator me-2"></i>Taxa de Juros Mensal</h6>
+                                        <div class="text-center mb-3">
+                                            <div class="formula-display">
+                                                $$i_{mensal} = (1 + i_{anual})^{\frac{1}{12}} - 1$$
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr><th>Parâmetro</th><th>Valor</th></tr>
+                                                    </thead>
+                                                    <tbody id="detalhesTaxaJuros">
+                                                        <tr><td><strong>Taxa Anual</strong></td><td id="taxaAnualDetalhada">-</td></tr>
+                                                        <tr><td><strong>Taxa Mensal</strong></td><td id="taxaMensalDetalhada">-</td></tr>
+                                                        <tr><td><strong>Fator de Desconto (v)</strong></td><td id="fatorDescontoDetalhado">-</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="alert alert-light">
+                                                    <h6 class="text-primary">Cálculo Detalhado:</h6>
+                                                    <div id="calculoTaxaMensal">
+                                                        <p class="mb-2"><strong>Passo 1:</strong> i_anual = <span id="taxaAnualPasso1">-</span>%</p>
+                                                        <p class="mb-2"><strong>Passo 2:</strong> (1 + i_anual) = 1 + <span id="taxaAnualPasso2">-</span>% = <span id="taxaAnualPasso2Resultado">-</span></p>
+                                                        <p class="mb-2"><strong>Passo 3:</strong> (1 + i_anual)^(1/12) = <span id="taxaAnualPasso3">-</span>^(1/12) = <span id="taxaAnualPasso3Resultado">-</span></p>
+                                                        <p class="mb-2"><strong>Passo 4:</strong> i_mensal = <span id="taxaAnualPasso3Resultado2">-</span> - 1 = <strong><span id="taxaMensalFinal">-</span>%</strong></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <div class="formula-container">
+                                    <h5 class="formula-title">💰 Cálculo da Parcela Price</h5>
+                                    <div class="alert alert-success">
+                                        <h6><i class="fas fa-calculator me-2"></i>Parcela Mensal do Financiamento</h6>
+                                        <div class="text-center mb-3">
+                                            <div class="formula-display">
+                                                $$A = P \times \frac{i \times (1+i)^n}{(1+i)^n - 1}$$
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <table class="table table-sm table-bordered">
+                                                    <thead class="table-dark">
+                                                        <tr><th>Parâmetro</th><th>Valor</th></tr>
+                                                    </thead>
+                                                    <tbody id="detalhesParcela">
+                                                        <tr><td><strong>Saldo Devedor (P)</strong></td><td id="saldoDevedorDetalhado">-</td></tr>
+                                                        <tr><td><strong>Taxa Mensal (i)</strong></td><td id="taxaMensalParcela">-</td></tr>
+                                                        <tr><td><strong>Parcelas (n)</strong></td><td id="parcelasDetalhado">-</td></tr>
+                                                        <tr class="table-success"><td><strong>Parcela (A)</strong></td><td id="parcelaCalculada">-</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="alert alert-light">
+                                                    <h6 class="text-primary">Cálculo Detalhado:</h6>
+                                                    <div id="calculoParcelaPrice">
+                                                        <p class="mb-2"><strong>Passo 1:</strong> (1 + i)^n = (1 + <span id="taxaMensalPasso1">-</span>)^<span id="parcelasPasso1">-</span> = <span id="taxaMensalPasso1Resultado">-</span></p>
+                                                        <p class="mb-2"><strong>Passo 2:</strong> i × (1+i)^n = <span id="taxaMensalPasso2">-</span> × <span id="taxaMensalPasso2Resultado">-</span> = <span id="taxaMensalPasso2Resultado2">-</span></p>
+                                                        <p class="mb-2"><strong>Passo 3:</strong> (1+i)^n - 1 = <span id="taxaMensalPasso3">-</span> - 1 = <span id="taxaMensalPasso3Resultado">-</span></p>
+                                                        <p class="mb-2"><strong>Passo 4:</strong> A = <span id="saldoDevedorPasso4">-</span> × <span id="taxaMensalPasso4">-</span> / <span id="taxaMensalPasso4Resultado">-</span> = <strong><span id="parcelaFinal">-</span></strong></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debug da Tábua Utilizada -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">🔍 Tábua de Mortalidade Utilizada</div>
+                            <div id="debugTabua">
+                                <div class="alert alert-warning">
+                                    <h6><i class="fas fa-bug me-2"></i>Informações da Tábua</h6>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <p><strong>Tábua Selecionada:</strong> <span id="tabuaSelecionada">-</span></p>
+                                            <p><strong>Idade Consultada:</strong> <span id="idadeConsultada">-</span></p>
+                                            <p><strong>Sexo:</strong> <span id="sexoConsultado">-</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="formula-container">
+                                    <h5 class="formula-title">📋 Tábua Completa Mensal - <span id="nomeTabuaCompleta">AT-83</span></h5>
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-info-circle me-2"></i>Fórmulas Utilizadas:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p><strong>Probabilidade de Sobrevivência Mensal:</strong></p>
+                                                <div class="formula-display">
+                                                    $$P_{mensal} = (1 - q_{anual})^{1/12}$$
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p><strong>Probabilidade de Morte Mensal:</strong></p>
+                                                <div class="formula-display">
+                                                    $$q_{mensal} = 1 - P_{mensal}$$
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Idade</th>
+                                                    <th>qx Anual (M)</th>
+                                                    <th>qx Anual (F)</th>
+                                                    <th>P Mensal (M)</th>
+                                                    <th>P Mensal (F)</th>
+                                                    <th>q Mensal (M)</th>
+                                                    <th>q Mensal (F)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tabuaCompleta">
+                                                <!-- Será preenchido via JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparação de Métodos de Cálculo -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">🔬 Validação: Comparação de Métodos de Cálculo</div>
+                            <div id="comparacaoMetodos">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Metodologias Implementadas</h6>
+                                    <p><strong>Método 1 - Iterativo:</strong> Cálculo mês a mês em loop sequencial (usado nos resultados principais)</p>
+                                    <p><strong>Método 2 - Vetorização NumPy:</strong> Cálculo otimizado usando álgebra matricial</p>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary">VABF - Comparação</h6>
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-dark">
+                                                <tr><th>Método</th><th>Valor</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>Iterativo</strong></td>
+                                                    <td id="vabfIterativo">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Otimizado</strong></td>
+                                                    <td id="vabfOtimizado">-</td>
+                                                </tr>
+                                                <tr class="table-warning">
+                                                    <td><strong>Diferença</strong></td>
+                                                    <td id="vabfDiferenca">-</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <h6 class="text-success">VACF - Comparação</h6>
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-dark">
+                                                <tr><th>Método</th><th>Valor</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>Iterativo</strong></td>
+                                                    <td id="vacfIterativo">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Otimizado</strong></td>
+                                                    <td id="vacfOtimizado">-</td>
+                                                </tr>
+                                                <tr class="table-warning">
+                                                    <td><strong>Diferença</strong></td>
+                                                    <td id="vacfDiferenca">-</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-success mt-3" id="validacaoStatus">
+                                    <strong><i class="fas fa-check-circle"></i> Status da Validação:</strong>
+                                    <span id="validacaoTexto">Aguardando cálculo...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Probabilidades Mensais Detalhadas -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="result-card">
+                            <div class="result-label">📊 Probabilidades Mensais Detalhadas</div>
+                            <div id="probabilidadesMensais">
+                                <div class="formula-container">
+                                    <h5 class="formula-title">🎯 Fórmula VABF Aplicada</h5>
+                                    <div class="text-center mb-3">
+                                        <div class="formula-display">
+                                            $$VABF = \sum_{t=1}^{m} B_{t-1} \times {}_{t-1}P_x \times q_{x+t-1} \times v^t$$
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-info-circle me-2"></i>Explicação dos Componentes</h6>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <strong>B_{t-1}:</strong> Saldo devedor no período t-1 (fórmula Price)
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>_{t-1}P_x:</strong> Probabilidade de sobrevivência até t-1
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>q_{x+t-1}:</strong> Probabilidade de morte no período t
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>v^t:</strong> Fator de desconto para o período t
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="formula-container">
+                                    <h5 class="formula-title">📈 Tabela de Probabilidades Mensais</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover" id="tabelaProbabilidades">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Mês (t)</th>
+                                                    <th>Idade (x+t-1)</th>
+                                                    <th>_{t-1}P_x</th>
+                                                    <th>q_{x+t-1}</th>
+                                                    <th>B_{t-1}</th>
+                                                    <th>v^t</th>
+                                                    <th>Contribuição VABF</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tabelaProbabilidadesBody">
+                                                <!-- Será preenchido via JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script das Tábuas de Mortalidade -->
+    <script>
+        // Variáveis globais
+        let uploadedFile = null;
+
+        // Carregar tábuas disponíveis
+        function carregarTabuas() {
+            const selectTabua = document.getElementById('tabua');
+            if (!selectTabua) return;
+
+            selectTabua.innerHTML = '<option value="">Selecione...</option>';
+
+            const tabuasFonte = (typeof window !== 'undefined' && window.TABUAS_MORTALIDADE) ? window.TABUAS_MORTALIDADE : (typeof TABUAS_MORTALIDADE !== 'undefined' ? TABUAS_MORTALIDADE : {});
+
+            if (Object.keys(tabuasFonte).length > 0) {
+                console.log('Debug - Tábuas encontradas:', Object.keys(tabuasFonte));
+                Object.keys(tabuasFonte).forEach(tabua => {
+                    if (tabua !== 'Nenhuma') {
+                        const option = document.createElement('option');
+                        option.value = tabua;
+                        option.textContent = tabua;
+                        selectTabua.appendChild(option);
+                    }
+                });
+            } else {
+                console.warn('Debug - TABUAS_MORTALIDADE não carregado.');
+            }
+        }
+
+        // Executar quando o DOM estiver carregado
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarTabuas();
+        });
+
+        // Configurar upload de arquivo
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+
+        fileUploadArea.addEventListener('click', () => fileInput.click());
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('dragover');
+        });
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (file.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && !file.name.endsWith('.xlsx')) {
+                alert('Por favor, selecione um arquivo XLSX válido.');
+                return;
+            }
+
+            uploadedFile = file;
+            fileInfo.innerHTML = `
+                <i class="fas fa-file-excel"></i>
+                <strong>Arquivo selecionado:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+            `;
+            fileInfo.style.display = 'block';
+        }
+
+        // Variável global para armazenar o resultado completo
+        let fullCalculationResult = null;
+
+        // Botão "Calcular Reserva Matemática" (Método Rápido/Otimizado)
+        document.getElementById('calculateQuickBtn').addEventListener('click', async function() {
+            // Validar se arquivo foi selecionado
+            if (!uploadedFile) {
+                alert('Por favor, selecione um arquivo XLSX com as taxas de risco.');
+                return;
+            }
+
+            // Coletar dados do formulário
+            const formData = new FormData();
+            formData.append('saldo_devedor', document.getElementById('saldoDevedor').value);
+            formData.append('parcelas_restantes', document.getElementById('parcelasRestantes').value);
+            formData.append('idade', document.getElementById('idade').value);
+            formData.append('sexo', document.getElementById('sexo').value);
+            formData.append('situacao', document.getElementById('situacao').value);
+            formData.append('tabua', document.getElementById('tabua').value);
+            formData.append('taxa_juros', document.getElementById('taxaJuros').value);
+            formData.append('arquivo', uploadedFile);
+
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('calculateQuickBtn').disabled = true;
+
+            try {
+                const response = await fetch('/calcular_reserva_matematica_individual', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                fullCalculationResult = result; // Armazenar para uso posterior
+
+                if (result.success && result.vabf_otimizado !== null) {
+                    // Preencher resumo dos inputs na coluna esquerda
+                    document.getElementById('displaySaldo').textContent = `R$ ${parseFloat(document.getElementById('saldoDevedor').value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                    document.getElementById('displayParcelas').textContent = `${document.getElementById('parcelasRestantes').value} meses`;
+                    document.getElementById('displayIdade').textContent = `${document.getElementById('idade').value} anos`;
+                    document.getElementById('displaySexo').textContent = document.getElementById('sexo').value === 'M' ? 'Masculino' : 'Feminino';
+                    document.getElementById('displaySituacao').textContent = document.getElementById('situacao').value === 'valido' ? 'Válido' : 'Inválido';
+                    document.getElementById('displayTabua').textContent = document.getElementById('tabua').value;
+                    document.getElementById('displayTaxa').textContent = `${document.getElementById('taxaJuros').value}% a.a.`;
+
+                    // Exibir resultados otimizados
+                    document.getElementById('vabfQuickResult').textContent = `R$ ${result.vabf_otimizado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    document.getElementById('vacfQuickResult').textContent = `R$ ${result.vacf_otimizado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    document.getElementById('reservaQuickResult').textContent = `R$ ${result.reserva_otimizada.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    
+                    // Mostrar layout de 2 colunas
+                    document.getElementById('mainLayout').style.display = 'flex';
+                    document.getElementById('quickResults').style.display = 'block';
+                    document.getElementById('viewMemoryBtn').style.display = 'inline-block';
+                    
+                    // Scroll suave
+                    document.getElementById('mainLayout').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('Erro no cálculo: ' + (result.error || 'Método otimizado não disponível'));
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao processar a solicitação. Tente novamente.');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('calculateQuickBtn').disabled = false;
+            }
+        });
+
+        // Botões "Ver Memória de Cálculo"
+        function showMemoryCalculation() {
+            if (!fullCalculationResult || !fullCalculationResult.success) {
+                alert('Por favor, calcule a reserva matemática primeiro.');
+                return;
+            }
+
+            const result = fullCalculationResult;
+
+            // Preencher resultados detalhados
+            document.getElementById('vabfResult').textContent = `R$ ${result.vabf.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('vacfResult').textContent = `R$ ${result.vacf.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('reservaResult').textContent = `R$ ${result.reserva_matematica.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            // Preencher todos os detalhamentos
+            preencherDebugTabua(result);
+            preencherDetalhamentoCalculos(result);
+            preencherQuadroUpload(result);
+            preencherTabelaProbabilidades(result);
+            preencherTabuaCalculo(result);
+            preencherQuadroCalculoPt(result);
+            preencherComparacaoMetodos(result);
+            
+            // Mostrar memória de cálculo
+            document.getElementById('memorySection').style.display = 'block';
+            document.getElementById('memorySection').scrollIntoView({ behavior: 'smooth' });
+            
+            // Re-renderizar MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+        }
+
+        document.getElementById('viewMemoryBtn').addEventListener('click', showMemoryCalculation);
+        document.getElementById('viewMemoryBtn2').addEventListener('click', showMemoryCalculation);
+
+        // Função para preencher quadro do upload
+        function preencherQuadroUpload(result) {
+            const quadroUpload = document.getElementById('quadroUpload');
+            const detalhes = result.detalhes;
+            
+            quadroUpload.innerHTML = `
+                <div class="upload-info">
+                    <h6>📁 Informações do Arquivo Processado</h6>
+                    <p><strong>Arquivo:</strong> resultados_seguro_prestamista_coletivo.xlsx</p>
+                    <p><strong>Estrutura:</strong> Arquivo com estrutura da Calculadora Coletiva</p>
+                </div>
+                
+                <div class="upload-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Total de Registros</div>
+                        <div class="stat-value">20.880</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Idades Disponíveis</div>
+                        <div class="stat-value">14 - 100 anos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Sexos</div>
+                        <div class="stat-value">Masculino</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Situações</div>
+                        <div class="stat-value">Válido, Inválido</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Parcelas</div>
+                        <div class="stat-value">1 - 120</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Tábuas</div>
+                        <div class="stat-value">BREMS 2021, MI85</div>
+                    </div>
+                </div>
+                
+                <div class="upload-info">
+                    <h6>🎯 Dados Utilizados no Cálculo</h6>
+                    <p><strong>Idade:</strong> ${detalhes.idade_inicial} anos</p>
+                    <p><strong>Sexo:</strong> ${detalhes.sexo === 'M' ? 'Masculino' : 'Feminino'}</p>
+                    <p><strong>Situação:</strong> ${detalhes.situacao === 'valido' ? 'Válido' : 'Inválido'}</p>
+                    <p><strong>Saldo Inicial:</strong> R$ ${detalhes.saldo_inicial.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                    <p><strong>Parcelas Restantes:</strong> ${detalhes.parcelas_restantes} meses</p>
+                    <p><strong>Taxa de Juros:</strong> ${(detalhes.taxa_juros_mensal * 100).toFixed(2)}% ao mês</p>
+                </div>
+            `;
+        }
+
+        // Função para preencher detalhamento dos cálculos
+        function preencherDetalhamentoCalculos(result) {
+            const detalhes = result.detalhes;
+            
+            // Taxa de juros
+            const taxaAnual = detalhes.taxa_juros_anual * 100; // Usar taxa anual do backend
+            const taxaMensal = detalhes.taxa_juros_mensal * 100;
+            const fatorDesconto = 1 / (1 + detalhes.taxa_juros_mensal);
+            
+            // Preencher detalhes da taxa de juros
+            document.getElementById('taxaAnualDetalhada').textContent = `${taxaAnual.toFixed(4)}%`;
+            document.getElementById('taxaMensalDetalhada').textContent = `${taxaMensal.toFixed(6)}%`;
+            document.getElementById('fatorDescontoDetalhado').textContent = fatorDesconto.toFixed(6);
+            
+            // Cálculo detalhado da taxa mensal
+            const taxaAnualDecimal = detalhes.taxa_juros_anual; // Usar taxa anual em decimal
+            const passo1 = taxaAnual;
+            const passo2 = 1 + taxaAnualDecimal;
+            const passo3 = Math.pow(passo2, 1/12);
+            const passo4 = (passo3 - 1) * 100; // Converter para porcentagem
+            
+            document.getElementById('taxaAnualPasso1').textContent = passo1.toFixed(4);
+            document.getElementById('taxaAnualPasso2').textContent = taxaAnualDecimal.toFixed(6);
+            document.getElementById('taxaAnualPasso2Resultado').textContent = passo2.toFixed(6);
+            document.getElementById('taxaAnualPasso3').textContent = passo2.toFixed(6);
+            document.getElementById('taxaAnualPasso3Resultado').textContent = passo3.toFixed(6);
+            document.getElementById('taxaAnualPasso3Resultado2').textContent = passo3.toFixed(6);
+            document.getElementById('taxaMensalFinal').textContent = passo4.toFixed(6);
+            
+            // Seção de Probabilidade de Morte removida - não é mais necessária
+            
+            // Parcela Price
+            const saldoDevedor = detalhes.saldo_inicial;
+            const parcelas = detalhes.parcelas_restantes;
+            const parcelaCalculada = saldoDevedor * detalhes.taxa_juros_mensal / (1 - Math.pow(1 + detalhes.taxa_juros_mensal, -parcelas));
+            
+            document.getElementById('saldoDevedorDetalhado').textContent = `R$ ${saldoDevedor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('taxaMensalParcela').textContent = `${taxaMensal.toFixed(6)}%`;
+            document.getElementById('parcelasDetalhado').textContent = `${parcelas} meses`;
+            document.getElementById('parcelaCalculada').textContent = `R$ ${parcelaCalculada.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            
+            // Cálculo detalhado da parcela Price
+            const parcelaPasso1 = Math.pow(1 + detalhes.taxa_juros_mensal, parcelas);
+            const parcelaPasso2 = detalhes.taxa_juros_mensal * parcelaPasso1;
+            const parcelaPasso3 = parcelaPasso1 - 1;
+            const parcelaPasso4 = parcelaPasso2 / parcelaPasso3;
+            const parcelaFinal = saldoDevedor * parcelaPasso4;
+            
+            document.getElementById('taxaMensalPasso1').textContent = (detalhes.taxa_juros_mensal * 100).toFixed(6) + '%';
+            document.getElementById('parcelasPasso1').textContent = parcelas;
+            document.getElementById('taxaMensalPasso1Resultado').textContent = parcelaPasso1.toFixed(6);
+            document.getElementById('taxaMensalPasso2').textContent = (detalhes.taxa_juros_mensal * 100).toFixed(6) + '%';
+            document.getElementById('taxaMensalPasso2Resultado').textContent = parcelaPasso1.toFixed(6);
+            document.getElementById('taxaMensalPasso2Resultado2').textContent = (parcelaPasso2 * 100).toFixed(6) + '%';
+            document.getElementById('taxaMensalPasso3').textContent = parcelaPasso1.toFixed(6);
+            document.getElementById('taxaMensalPasso3Resultado').textContent = parcelaPasso3.toFixed(6);
+            document.getElementById('saldoDevedorPasso4').textContent = `R$ ${saldoDevedor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('taxaMensalPasso4').textContent = (parcelaPasso2 * 100).toFixed(6) + '%';
+            document.getElementById('taxaMensalPasso4Resultado').textContent = parcelaPasso3.toFixed(6);
+            document.getElementById('parcelaFinal').textContent = `R$ ${parcelaFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+
+        // Função para preencher debug da tábua
+        function preencherDebugTabua(result) {
+            const detalhes = result.detalhes || {};
+            
+            // Determinar nome da tábua exibida
+            const tabuaExibicao = detalhes.tabua_mortalidade || result.tabua || '-';
+            document.getElementById('tabuaSelecionada').textContent = tabuaExibicao;
+            document.getElementById('idadeConsultada').textContent = detalhes.idade_inicial ? `${detalhes.idade_inicial} anos` : '-';
+            document.getElementById('sexoConsultado').textContent = detalhes.sexo === 'M' ? 'Masculino' : (detalhes.sexo === 'F' ? 'Feminino' : '-');
+            
+            // Preencher tábua completa mensal
+            preencherTabuaCompleta(result);
+        }
+        
+        // Função para preencher tábua completa mensal
+        function preencherTabuaCompleta(result) {
+            const tbody = document.getElementById('tabuaCompleta');
+            const nomeTabua = (result.detalhes?.tabua_mortalidade) || result.tabua || result.tabua_input || 'AT-83';
+
+            const tabuasFonte = (typeof window !== 'undefined' && window.TABUAS_MORTALIDADE) ? window.TABUAS_MORTALIDADE : (typeof TABUAS_MORTALIDADE !== 'undefined' ? TABUAS_MORTALIDADE : {});
+
+            console.log('Debug - Nome da tábua:', nomeTabua);
+            console.log('Debug - Tábuas disponíveis:', tabuasFonte ? Object.keys(tabuasFonte) : 'undefined');
+
+            if (!tabuasFonte || !tabuasFonte[nomeTabua]) {
+                console.warn('Debug - Tábua NÃO encontrada:', nomeTabua);
+                // Fallback se não conseguir carregar a tábua
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="7" class="text-center text-muted">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Tábua "${nomeTabua}" não encontrada ou não carregada
+                    </td>
+                `;
+                tbody.appendChild(row);
+                return;
+            }
+
+            const dadosTabua = tabuasFonte[nomeTabua];
+            const dadosMasc = dadosTabua.masculino || {};
+            const dadosFem = dadosTabua.feminino || {};
+            
+            // Obter todas as idades disponíveis
+            const todasIdades = new Set();
+            Object.keys(dadosMasc).forEach(idade => todasIdades.add(parseInt(idade)));
+            Object.keys(dadosFem).forEach(idade => todasIdades.add(parseInt(idade)));
+            
+            // Converter para array e ordenar
+            const idadesOrdenadas = Array.from(todasIdades).sort((a, b) => a - b);
+            
+            // Mostrar idades de 0 a 120 (ou todas as disponíveis)
+            const idadesParaMostrar = idadesOrdenadas.filter(idade => idade >= 0 && idade <= 120);
+            
+            idadesParaMostrar.forEach(idade => {
+                const idadeStr = idade.toString();
+                const qxAnualM = dadosMasc[idadeStr] || 0;
+                const qxAnualF = dadosFem[idadeStr] || 0;
+                
+                // Fórmulas corretas conforme explicado pelo usuário
+                // P_mensal = (1 - q_anual)^(1/12)
+                const pMensalM = Math.pow(1 - qxAnualM, 1/12);
+                const pMensalF = Math.pow(1 - qxAnualF, 1/12);
+                
+                // q_mensal = 1 - P_mensal
+                const qxMensalM = 1 - pMensalM;
+                const qxMensalF = 1 - pMensalF;
+                
+                const row = document.createElement('tr');
+                
+                // Destacar idade do usuário (se disponível)
+                const idadeUsuario = result.detalhes.idade_inicial;
+                if (idade === idadeUsuario) {
+                    row.classList.add('table-success');
+                }
+                
+                row.innerHTML = `
+                    <td><strong>${idade}</strong></td>
+                    <td>${(qxAnualM * 100).toFixed(6)}%</td>
+                    <td>${(qxAnualF * 100).toFixed(6)}%</td>
+                    <td>${(pMensalM * 100).toFixed(6)}%</td>
+                    <td>${(pMensalF * 100).toFixed(6)}%</td>
+                    <td>${(qxMensalM * 100).toFixed(6)}%</td>
+                    <td>${(qxMensalF * 100).toFixed(6)}%</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Função para preencher tabela de probabilidades mensais
+        function preencherTabelaProbabilidades(result) {
+            const tbody = document.getElementById('tabelaProbabilidadesBody');
+            const calculoMensal = result.detalhes.calculo_mensal;
+            const taxaJuros = result.detalhes.taxa_juros_mensal;
+            const v = 1 / (1 + taxaJuros);
+            
+            tbody.innerHTML = '';
+            
+            calculoMensal.forEach(mes => {
+                const contribuicaoVABF = mes.saldo_devedor_t_menos_1 * mes.prob_sobrevivencia_t_menos_1 * mes.qx_t_menos_1 * (v ** mes.mes);
+                
+                const row = document.createElement('tr');
+                
+                // Destacar o primeiro mês
+                if (mes.mes === 1) {
+                    row.classList.add('table-success');
+                }
+                
+                row.innerHTML = `
+                    <td><strong>${mes.mes}</strong></td>
+                    <td>${mes.idade} anos</td>
+                    <td>${mes.prob_sobrevivencia_t_menos_1.toFixed(6)}</td>
+                    <td>${mes.qx_t_menos_1.toFixed(6)}</td>
+                    <td>R$ ${mes.saldo_devedor_t_menos_1.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td>${(v ** mes.mes).toFixed(6)}</td>
+                    <td><strong>R$ ${contribuicaoVABF.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Função para preencher quadro de cálculo P_{t}
+        function preencherQuadroCalculoPt(result) {
+            const quadroCalculoPt = document.getElementById('quadroCalculoPt');
+            const calculoMensal = result.detalhes.calculo_mensal;
+            
+            let quadroHTML = `
+                <div class="upload-info">
+                    <h6>🧮 Cálculo Detalhado da Coluna P_{t}</h6>
+                    <p>A coluna <strong>P_{t}</strong> representa a probabilidade de sobrevivência até o final do mês t.</p>
+                    <p><strong>Fórmula:</strong> P_{t} = P_{t-1} × p_mensal</p>
+                    <br>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Mês</th>
+                                    <th>P_{t-1}</th>
+                                    <th>p_mensal</th>
+                                    <th>P_{t} = P_{t-1} × p_mensal</th>
+                                    <th>Resultado Final</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            calculoMensal.forEach(mes => {
+                const ptMenos1 = mes.prob_sobrevivencia_t_menos_1;
+                const pMensal = mes.p_mensal;
+                const pt = mes.prob_sobrevivencia;
+                
+                quadroHTML += `
+                    <tr>
+                        <td><strong>${mes.mes}</strong></td>
+                        <td>${ptMenos1.toFixed(6)}</td>
+                        <td>${pMensal.toFixed(6)}</td>
+                        <td>${ptMenos1.toFixed(6)} × ${pMensal.toFixed(6)}</td>
+                        <td><strong>${pt.toFixed(6)}</strong></td>
+                    </tr>
+                `;
+            });
+            
+            quadroHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <br>
+                    <div class="alert alert-info">
+                        <h6>📝 Explicação:</h6>
+                        <ul>
+                            <li><strong>P_{t-1}</strong>: Probabilidade de sobrevivência até o início do mês t</li>
+                            <li><strong>p_mensal</strong>: Probabilidade mensal de sobrevivência (1 - qx_mensal)</li>
+                            <li><strong>P_{t}</strong>: Probabilidade de sobrevivência até o final do mês t</li>
+                        </ul>
+                        <p><strong>Exemplo Mês 1:</strong> P_1 = P_0 × p_mensal = 1.000000 × 0.999930 = 0.999930</p>
+                        <p><strong>Exemplo Mês 2:</strong> P_2 = P_1 × p_mensal = 0.999930 × 0.999930 = 0.999860</p>
+                    </div>
+                </div>
+            `;
+            
+            quadroCalculoPt.innerHTML = quadroHTML;
+        }
+
+        // Função para preencher comparação de métodos
+        function preencherComparacaoMetodos(result) {
+            // Verificar se os dados da comparação existem
+            if (!result.vabf_otimizado || !result.vacf_otimizado || !result.comparacao) {
+                console.log('Dados de comparação não disponíveis:', result);
+                
+                // Preencher com dados do método iterativo apenas
+                document.getElementById('vabfIterativo').textContent = `R$ ${result.vabf.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                document.getElementById('vabfOtimizado').textContent = 'N/A';
+                document.getElementById('vabfDiferenca').textContent = 'N/A';
+                
+                document.getElementById('vacfIterativo').textContent = `R$ ${result.vacf.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                document.getElementById('vacfOtimizado').textContent = 'N/A';
+                document.getElementById('vacfDiferenca').textContent = 'N/A';
+                
+                // Status de erro
+                const validacaoAlert = document.getElementById('validacaoStatus');
+                const validacaoTexto = document.getElementById('validacaoTexto');
+                validacaoAlert.className = 'alert alert-danger mt-3';
+                validacaoTexto.innerHTML = `❌ Método otimizado não disponível. Verifique o console do servidor para detalhes.`;
+                return;
+            }
+            
+            // VABF
+            document.getElementById('vabfIterativo').textContent = `R$ ${result.vabf.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('vabfOtimizado').textContent = `R$ ${result.vabf_otimizado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('vabfDiferenca').textContent = `R$ ${result.comparacao.diferenca_vabf.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 4})} (${result.comparacao.percentual_diferenca_vabf.toFixed(6)}%)`;
+            
+            // VACF
+            document.getElementById('vacfIterativo').textContent = `R$ ${result.vacf.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('vacfOtimizado').textContent = `R$ ${result.vacf_otimizado.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('vacfDiferenca').textContent = `R$ ${result.comparacao.diferenca_vacf.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 4})} (${result.comparacao.percentual_diferenca_vacf.toFixed(6)}%)`;
+            
+            // Status de validação
+            const validacaoAlert = document.getElementById('validacaoStatus');
+            const validacaoTexto = document.getElementById('validacaoTexto');
+            
+            const diferencaTotal = result.comparacao.diferenca_vabf + result.comparacao.diferenca_vacf;
+            const limiteTolerancia = 0.01; // R$ 0,01
+            
+            if (diferencaTotal < limiteTolerancia) {
+                validacaoAlert.className = 'alert alert-success mt-3';
+                validacaoTexto.innerHTML = `✅ Ambos os métodos convergem! Diferença total: R$ ${diferencaTotal.toLocaleString('pt-BR', {minimumFractionDigits: 4, maximumFractionDigits: 4})}`;
+            } else if (diferencaTotal < 1.00) {
+                validacaoAlert.className = 'alert alert-warning mt-3';
+                validacaoTexto.innerHTML = `⚠️ Pequena divergência detectada. Diferença total: R$ ${diferencaTotal.toLocaleString('pt-BR', {minimumFractionDigits: 4, maximumFractionDigits: 4})}`;
+            } else {
+                validacaoAlert.className = 'alert alert-danger mt-3';
+                validacaoTexto.innerHTML = `❌ Divergência significativa! Diferença total: R$ ${diferencaTotal.toLocaleString('pt-BR', {minimumFractionDigits: 4, maximumFractionDigits: 4})}`;
+            }
+        }
+
+        // Função para preencher tábua de cálculo
+        function preencherTabuaCalculo(result) {
+            const tabuaCalculo = document.getElementById('tabuaCalculo');
+            const calculoMensal = result.detalhes.calculo_mensal;
+            const taxaJuros = result.detalhes.taxa_juros_mensal;
+            const v = 1 / (1 + taxaJuros);
+            
+            let tabelaHTML = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Mês</th>
+                                <th>Idade</th>
+                                <th>Saldo Devedor</th>
+                                <th>B_{t-1}</th>
+                                <th>Amortização</th>
+                                <th>Juros</th>
+                                <th>Taxa Risco</th>
+                                <th>P_{t-1}</th>
+                                <th>P_{t}</th>
+                                <th>q_{x+t-1}</th>
+                                <th>v^t</th>
+                                <th>Benefício</th>
+                                <th>Prêmio</th>
+                                <th>VABF Mês</th>
+                                <th>VACF Mês</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            calculoMensal.forEach(mes => {
+                // Calcular fator de desconto como fallback se não vier do backend
+                const fatorDesconto = mes.fator_desconto || (v ** mes.mes);
+                
+                tabelaHTML += `
+                    <tr>
+                        <td><strong>${mes.mes}</strong></td>
+                        <td>${mes.idade}</td>
+                        <td>R$ ${mes.saldo_devedor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${mes.saldo_devedor_t_menos_1.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${mes.amortizacao.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${mes.juros.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>${(mes.taxa_risco * 100).toFixed(6)}%</td>
+                        <td>${mes.prob_sobrevivencia_t_menos_1.toFixed(6)}</td>
+                        <td>${mes.prob_sobrevivencia.toFixed(6)}</td>
+                        <td>${mes.qx_t_menos_1.toFixed(6)}</td>
+                        <td>${fatorDesconto.toFixed(6)}</td>
+                        <td>R$ ${mes.beneficio.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${mes.premio.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${mes.vabf_mes.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${mes.vacf_mes.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            });
+            
+            tabelaHTML += `
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="upload-info">
+                    <h6>📊 Resumo dos Cálculos</h6>
+                    <p><strong>Total VABF:</strong> R$ ${result.vabf.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                    <p><strong>Total VACF:</strong> R$ ${result.vacf.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                    <p><strong>Reserva Matemática:</strong> R$ ${result.reserva_matematica.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                </div>
+            `;
+            
+            tabuaCalculo.innerHTML = tabelaHTML;
+        }
+
+        // Validação em tempo real
+        document.getElementById('saldoDevedor').addEventListener('input', function() {
+            if (this.value < 0) this.value = 0;
+        });
+
+        document.getElementById('parcelasRestantes').addEventListener('input', function() {
+            if (this.value < 1) this.value = 1;
+            if (this.value > 480) this.value = 480;
+        });
+
+        document.getElementById('idade').addEventListener('input', function() {
+            if (this.value < 18) this.value = 18;
+            if (this.value > 100) this.value = 100;
+        });
+    </script>
+</body>
+</html>

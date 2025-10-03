@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Calculadora de Seguro Prestamista</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a365d 0%, #2d3748 50%, #744210 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            color: #1a365d;
+            margin-bottom: 0px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #1a365d;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #d69e2e;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(214, 158, 46, 0.1);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #1a365d, #d69e2e);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(26, 54, 93, 0.3);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            border: 1px solid #fcc;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #d69e2e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            margin-top: 30px;
+            color: #1a365d;
+            font-size: 12px;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .logo {
+                width: 200px;
+                height: 200px;
+            }
+            
+            h1 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <img src="https://www.ccaconde.com.br/img/templatemo_logo.png" alt="CONDE CONSULTORIA ATUARIAL" />
+        </div>
+        <h1>Calculadora de Seguro Prestamista</h1>
+        
+        <div style="margin-bottom: 10px;"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            
+            <button type="submit" class="login-button">Entrar</button>
+        </form>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Verificando credenciais...</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2024 Conde Consultoria Atuarial</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const loading = document.getElementById('loading');
+            const loginButton = document.querySelector('.login-button');
+            
+            // Esconder mensagem de erro anterior
+            errorMessage.style.display = 'none';
+            
+            // Mostrar loading
+            loading.style.display = 'block';
+            loginButton.disabled = true;
+            loginButton.textContent = 'Verificando...';
+            
+            // Simular delay de verificação
+            setTimeout(() => {
+                // Verificar credenciais
+                if (username === 'conde' && password === 'c@nde13') {
+                    // Credenciais corretas - criar sessão
+                    const currentTime = Date.now();
+                    sessionStorage.setItem('authenticated', 'true');
+                    sessionStorage.setItem('loginTime', currentTime.toString());
+                    sessionStorage.setItem('lastActivity', currentTime.toString());
+                    
+                    // Redirecionar para a calculadora
+                    window.location.href = 'index.html';
+                } else {
+                    // Credenciais incorretas
+                    errorMessage.textContent = 'Usuário ou senha incorretos. Tente novamente.';
+                    errorMessage.style.display = 'block';
+                    
+                    // Limpar campos
+                    document.getElementById('username').value = '';
+                    document.getElementById('password').value = '';
+                    document.getElementById('username').focus();
+                }
+                
+                // Esconder loading
+                loading.style.display = 'none';
+                loginButton.disabled = false;
+                loginButton.textContent = 'Entrar';
+            }, 1000);
+        });
+        
+        // Focar no campo de usuário ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('username').focus();
+        });
+        
+        // Verificar se já está autenticado
+        if (sessionStorage.getItem('authenticated') === 'true') {
+            const loginTime = parseInt(sessionStorage.getItem('loginTime') || '0');
+            const lastActivity = parseInt(sessionStorage.getItem('lastActivity') || '0');
+            const currentTime = Date.now();
+            const sessionDuration = 8 * 60 * 60 * 1000; // 8 horas
+            const inactivityTimeout = 10 * 60 * 1000; // 10 minutos de inatividade
+            const maxSessionTime = 30 * 60 * 1000; // 30 minutos máximo
+            
+            // Verificar se passou do tempo máximo (30 minutos)
+            if (currentTime - loginTime >= maxSessionTime) {
+                // Sessão expirada por tempo máximo
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por tempo máximo (30 minutos). Faça login novamente.');
+            }
+            // Verificar se passou do tempo de inatividade (10 minutos)
+            else if (currentTime - lastActivity >= inactivityTimeout) {
+                // Sessão expirada por inatividade
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por inatividade (10 minutos). Faça login novamente.');
+            }
+            // Verificar se passou do tempo total (8 horas)
+            else if (currentTime - loginTime >= sessionDuration) {
+                // Sessão expirada por tempo total
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por tempo total (8 horas). Faça login novamente.');
+            } else {
+                // Sessão ainda válida, redirecionar para a calculadora
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+</body>
+</html>

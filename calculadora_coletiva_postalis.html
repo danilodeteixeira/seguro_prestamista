@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Seguro Prestamista - Coletivo</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Tábuas de Mortalidade -->
+    <script src="tabuas_mortalidade.js"></script>
+    
+    <!-- Estilo para evitar flash de conteúdo não autenticado -->
+    <style>
+        body {
+            visibility: hidden;
+        }
+        body.authenticated {
+            visibility: visible;
+        }
+    </style>
+    
+    <!-- Script de verificação de autenticação - EXECUTA PRIMEIRO -->
+    <script>
+        // Verificar autenticação ANTES de carregar qualquer conteúdo
+        function checkAuthentication() {
+            const isAuthenticated = sessionStorage.getItem('authenticated') === 'true';
+            const loginTime = parseInt(sessionStorage.getItem('loginTime') || '0');
+            const lastActivity = parseInt(sessionStorage.getItem('lastActivity') || '0');
+            const currentTime = Date.now();
+            const sessionDuration = 8 * 60 * 60 * 1000; // 8 horas
+            const inactivityTimeout = 10 * 60 * 1000; // 10 minutos de inatividade
+            const maxSessionTime = 30 * 60 * 1000; // 30 minutos máximo
+            
+            if (!isAuthenticated) {
+                // Não autenticado - redirecionar IMEDIATAMENTE
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo máximo (30 minutos)
+            if (currentTime - loginTime >= maxSessionTime) {
+                // Sessão expirada por tempo máximo
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por tempo máximo (30 minutos). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo de inatividade (10 minutos)
+            if (currentTime - lastActivity >= inactivityTimeout) {
+                // Sessão expirada por inatividade
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por inatividade (10 minutos). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Verificar se passou do tempo total (8 horas)
+            if (currentTime - loginTime >= sessionDuration) {
+                // Sessão expirada por tempo total
+                sessionStorage.removeItem('authenticated');
+                sessionStorage.removeItem('loginTime');
+                sessionStorage.removeItem('lastActivity');
+                alert('Sessão expirada por tempo total (8 horas). Faça login novamente.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Sessão válida - atualizar última atividade
+            sessionStorage.setItem('lastActivity', currentTime.toString());
+            return true;
+        }
+        
+        // Executar verificação quando o DOM estiver carregado
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuthentication()) {
+                // Sessão válida - mostrar conteúdo
+                document.body.classList.add('authenticated');
+            }
+        });
+        
+        // Atualizar atividade a cada 5 minutos
+        setInterval(() => {
+            if (sessionStorage.getItem('authenticated') === 'true') {
+                sessionStorage.setItem('lastActivity', Date.now().toString());
+            }
+        }, 5 * 60 * 1000);
+    </script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e67e22;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --border-color: #bdc3c7;
+            --background-color: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+        }
+
+        body {
+            background: #f8f9fa;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        .main-container {
+            background: var(--background-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px;
+            max-width: 1400px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            color: var(--text-primary);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+            margin: 0;
+        }
+
+        .form-section {
+            background: var(--background-color);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .form-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: var(--background-color);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.2rem rgba(230, 126, 34, 0.25);
+            outline: none;
+        }
+
+        .form-control:hover, .form-select:hover {
+            border-color: var(--accent-color);
+        }
+
+        .btn-calculate {
+            background: var(--accent-color);
+            border: none;
+            border-radius: 6px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+        }
+
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 126, 34, 0.4);
+            background: #d35400;
+        }
+
+        .results-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 2px solid var(--light-color);
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .table thead th {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .table tbody td {
+            border-color: #e9ecef;
+            vertical-align: middle;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner-border {
+            color: var(--accent-color);
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .range-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .range-inputs .form-control {
+            flex: 1;
+        }
+
+        .range-separator {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-check {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-check:hover {
+            border-color: var(--accent-color);
+        }
+
+        .form-check-input:checked + .form-check-label {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .btn-download {
+            background: var(--success-color);
+            border: none;
+            border-radius: 6px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+            background: #229954;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <a href="index.html" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar ao Início
+                    </a>
+                    <div></div>
+                </div>
+                <h1><i class="fas fa-users me-3"></i>Calculadora de Seguro Prestamista - Coletivo</h1>
+                <p>Análise de Múltiplas Combinações - Cálculos Atuariais Comparativos</p>
+            </div>
+
+            <!-- Formulário de Entrada -->
+            <div class="form-section">
+                <h3><i class="fas fa-edit me-2"></i>Parâmetros de Entrada</h3>
+                <form id="calculatorForm">
+                    <div class="row">
+                        <!-- Intervalo de Idade -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Intervalo de Idade</label>
+                            <div class="range-inputs">
+                                <input type="number" class="form-control" id="idade_min" name="idade_min" value="20" min="0" max="100" step="1" placeholder="Idade mínima" required>
+                                <span class="range-separator">até</span>
+                                <input type="number" class="form-control" id="idade_max" name="idade_max" value="21" min="0" max="100" step="1" placeholder="Idade máxima" required>
+                            </div>
+                        </div>
+
+                        <!-- Sexo -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Sexo</label>
+                            <div class="checkbox-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="sexo_masculino" name="sexo" value="M" checked>
+                                    <label class="form-check-label" for="sexo_masculino">Masculino</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="sexo_feminino" name="sexo" value="F">
+                                    <label class="form-check-label" for="sexo_feminino">Feminino</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Intervalo de Parcelas Restantes -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Intervalo de Parcelas Restantes</label>
+                            <div class="range-inputs">
+                                <input type="number" class="form-control" id="parcelas_min" name="parcelas_min" value="1" min="1" max="120" step="1" placeholder="Parcelas mínimas" required>
+                                <span class="range-separator">até</span>
+                                <input type="number" class="form-control" id="parcelas_max" name="parcelas_max" value="2" min="1" max="120" step="1" placeholder="Parcelas máximas" required>
+                            </div>
+                        </div>
+
+                        <!-- Taxa de Juros -->
+                        <div class="col-md-6 mb-3">
+                            <label for="taxa_juros" class="form-label">Taxa de Juros Anual (%)</label>
+                            <input type="number" class="form-control" id="taxa_juros" name="taxa_juros" value="12.0" step="0.0001" min="0" max="30" placeholder="0,0000 a 30,0000%" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Valor do Financiamento -->
+                        <div class="col-md-6 mb-3">
+                            <label for="valor_financiamento" class="form-label">Valor do Financiamento (R$)</label>
+                            <input type="text" class="form-control" id="valor_financiamento" name="valor_financiamento" value="R$ 100.000,00" placeholder="R$ 1,00 a R$ 500.000,00" required>
+                        </div>
+
+                        <!-- Período Total (fixo) -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Período Total (meses)</label>
+                            <input type="number" class="form-control" id="periodo_total" name="periodo_total" value="120" readonly>
+                            <div class="form-text">Sempre 120 meses (10 anos)</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Tábuas Válidas -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tábuas Válidas</label>
+                            <select class="form-select" id="tabuas_validas" name="tabuas_validas" multiple>
+                                <option value="">Carregando tábuas...</option>
+                            </select>
+                            <small class="form-text text-muted">Segure Ctrl para selecionar múltiplas tábuas</small>
+                        </div>
+
+                        <!-- Tábuas Inválidas -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tábuas Inválidas</label>
+                            <select class="form-select" id="tabuas_invalidas" name="tabuas_invalidas" multiple>
+                                <option value="">Carregando tábuas...</option>
+                            </select>
+                            <small class="form-text text-muted">Segure Ctrl para selecionar múltiplas tábuas</small>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-calculate">
+                            <i class="fas fa-calculator me-2"></i>Calcular Análise Coletiva
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Calculando...</span>
+                </div>
+                <p class="mt-2">Calculando análise coletiva...</p>
+            </div>
+
+            <!-- Resultados -->
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <h3><i class="fas fa-table me-2"></i>Resultados da Análise Coletiva</h3>
+                
+                <!-- Botão de Download - Movido para cima -->
+                <div class="text-center mb-4" id="downloadSection" style="display: none;">
+                    <button class="btn btn-download btn-lg" id="downloadBtn" onclick="downloadExcel()">
+                        <i class="fas fa-download me-2"></i>Baixar Tabela em Excel (.xlsx)
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Idade</th>
+                                <th>Sexo</th>
+                                <th>Parcelas Restantes</th>
+                                <th>Tipo Tábua</th>
+                                <th>Tábua</th>
+                                <th>Prêmio Anual (R$)</th>
+                                <th>Prêmio Mensal (R$)</th>
+                                <th>Taxa Risco Anual (%)</th>
+                                <th>Taxa Risco Mensal (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <!-- Será preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Botão Mostrar Mais -->
+                <div class="text-center mt-4" id="showMoreSection" style="display: none;">
+                    <button class="btn btn-primary btn-lg" id="showMoreBtn" onclick="showMoreResults()">
+                        <i class="fas fa-plus me-2"></i>Mostrar Mais Resultados
+                    </button>
+                    <div class="mt-2">
+                        <small class="text-muted" id="resultsInfo">Mostrando 0 de 0 resultados</small>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-4" id="summaryInfo" style="display: none;">
+                    <h5><i class="fas fa-info-circle me-2"></i>Resumo da Análise</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Total de combinações:</strong> <span id="totalCombinacoes">-</span></p>
+                            <p><strong>Idades analisadas:</strong> <span id="idadesAnalisadas">-</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Parcelas analisadas:</strong> <span id="parcelasAnalisadas">-</span></p>
+                            <p><strong>Tábuas utilizadas:</strong> <span id="tabuasUtilizadas">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Carregar tábuas disponíveis ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarTabuas();
+            
+            // Formatação automática do valor do financiamento
+            document.getElementById('valor_financiamento').addEventListener('input', function() {
+                let valor = this.value.replace(/[^\d]/g, ''); // Remove tudo exceto números
+                
+                if (valor === '') {
+                    this.value = '';
+                    return;
+                }
+                
+                // Converte para número e formata
+                const numero = parseFloat(valor) / 100; // Divide por 100 para centavos
+                this.value = numero.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            });
+
+            // Formatação inicial do valor
+            document.getElementById('valor_financiamento').addEventListener('focus', function() {
+                if (this.value === 'R$ 100.000,00') {
+                    this.value = '100000';
+                }
+            });
+        });
+
+        function carregarTabuas() {
+            fetch('/tabuas')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const selectValidas = document.getElementById('tabuas_validas');
+                        const selectInvalidas = document.getElementById('tabuas_invalidas');
+                        
+                        // Limpar opções existentes
+                        selectValidas.innerHTML = '';
+                        selectInvalidas.innerHTML = '';
+                        
+                        data.tabuas.forEach(tabua => {
+                            // Tábuas Válidas
+                            const optionValida = document.createElement('option');
+                            optionValida.value = tabua;
+                            optionValida.textContent = tabua;
+                            if (tabua === data.tabua_padrao) {
+                                optionValida.selected = true;
+                            }
+                            selectValidas.appendChild(optionValida);
+                            
+                            // Tábuas Inválidas
+                            const optionInvalida = document.createElement('option');
+                            optionInvalida.value = tabua;
+                            optionInvalida.textContent = tabua;
+                            selectInvalidas.appendChild(optionInvalida);
+                        });
+                    } else {
+                        console.error('Erro ao carregar tábuas:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na comunicação:', error);
+                });
+        }
+
+        // Formulário de cálculo
+        document.getElementById('calculatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculate();
+        });
+
+        // Função para calcular saldo devedor usando fórmula Price
+        function calcularSaldoDevedor(valorInicial, taxaMensal, periodoTotal, mesAtual) {
+            // Usar taxa efetiva mensal (como o Excel faz)
+            const pmt = valorInicial * taxaMensal / (1 - Math.pow(1 + taxaMensal, -periodoTotal));
+            const saldoDevedor = valorInicial * (Math.pow(1 + taxaMensal, periodoTotal) - Math.pow(1 + taxaMensal, mesAtual - 1)) / (Math.pow(1 + taxaMensal, periodoTotal) - 1);
+            return saldoDevedor;
+        }
+
+        // Função para calcular PMT usando fórmula Price
+        function calcularPMT(valorInicial, taxaMensal, periodoTotal) {
+            // Fórmula equivalente ao PGTO do Excel com tipo=0 (pagamento no final)
+            // PMT = PV × i / (1 - (1+i)^(-n))
+            const pmt = valorInicial * taxaMensal / (1 - Math.pow(1 + taxaMensal, -periodoTotal));
+            return pmt;
+        }
+
+        // Função para obter probabilidade de morte da tábua real via servidor
+        async function obterProbabilidadeMorte(idade, sexo, tabua) {
+            try {
+                const requestData = {
+                    tabua: tabua,
+                    idade: idade,
+                    sexo: sexo
+                };
+                console.log(`ENVIANDO PARA SERVIDOR: ${JSON.stringify(requestData)}`);
+                
+                const response = await fetch('/obter_qx', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                console.log(`RESPOSTA DO SERVIDOR: Status ${response.status}`);
+                const data = await response.json();
+                console.log(`DADOS RECEBIDOS: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    return data.qx;
+                } else {
+                    console.warn(`Erro ao obter probabilidade: ${data.error}. Usando fallback.`);
+                    return obterProbabilidadeMorteSimulada(idade, sexo, tabua);
+                }
+            } catch (error) {
+                console.error('Erro na comunicação com servidor:', error);
+                return obterProbabilidadeMorteSimulada(idade, sexo, tabua);
+            }
+        }
+        
+        // Função simulada como fallback
+        function obterProbabilidadeMorteSimulada(idade, sexo, tabua) {
+            // Fatores baseados no tipo de tábua selecionada
+            let fatorTabua = 1.0;
+            let baseProb = 0.001; // Base de 0.1%
+            
+            if (tabua && tabua.toLowerCase().includes('at2000')) {
+                fatorTabua = 0.8; // Tábua AT2000 é mais conservadora
+                baseProb = 0.0008;
+            } else if (tabua && tabua.toLowerCase().includes('br-emsb')) {
+                fatorTabua = 1.2; // Tábua BR-EMSB é mais agressiva
+                baseProb = 0.0012;
+            } else if (tabua && tabua.toLowerCase().includes('padrão')) {
+                fatorTabua = 1.0; // Tábua padrão
+                baseProb = 0.001;
+            }
+            
+            // Cálculo baseado na idade (exponencial)
+            const probBase = baseProb * Math.pow(1.08, idade - 18);
+            
+            // Fator por sexo
+            const fatorSexo = sexo === 'M' ? 1.3 : 0.8;
+            
+            // Aplicar fator da tábua
+            const probFinal = probBase * fatorSexo * fatorTabua;
+            
+            // Limitar entre 0.01% e 15%
+            return Math.max(0.0001, Math.min(probFinal, 0.15));
+        }
+
+        // Função para calcular prêmio anual por idade (metodologia ChatGPT)
+        async function calcularPremioAnualPorIdade(idadeAtual, parcelaRestante, periodoTotal, taxaJurosAnual, valorInicial, sexo, tabua) {
+            // Usar taxa efetiva mensal (como o Excel faz)
+            const taxaMensal = Math.pow(1 + taxaJurosAnual/100, 1/12) - 1;
+            
+            // Calcular a partir da parcela restante atual (sem truncamento)
+            // Se restam 36 parcelas de 36 total, está na parcela 1
+            const parcelaAtual = periodoTotal - parcelaRestante + 1;
+            const mesesRestantes = parcelaRestante;
+            const mesesCobertos = Math.min(12, mesesRestantes);
+            
+            // Obter probabilidade de morte anual da idade atual usando a tábua real
+            const probMorteAnual = await obterProbabilidadeMorte(idadeAtual, sexo, tabua);
+            
+            // Converter probabilidade anual para mensal usando fórmula atuarial
+            const probMorteMensal = 1 - Math.pow(1 - probMorteAnual, 1/12);
+            
+            let premioAnual = 0;
+            const detalhes = [];
+            
+            // Calcular prêmio puro para os próximos 12 meses usando a fórmula correta
+            // A = Σ B_k × k-1 P_x × q_x+k-1 × v^k
+            let probSobrevivencia = 1.0; // Probabilidade de sobreviver até o início (k=1)
+            
+            for (let k = 1; k <= mesesCobertos; k++) {
+                const mesAtual = parcelaAtual + k - 1;
+                const saldoDevedor = calcularSaldoDevedor(valorInicial, taxaMensal, periodoTotal, mesAtual);
+                const fatorDesconto = Math.pow(1 / (1 + taxaMensal), k);
+                
+                // Probabilidade de morte no período k (dada a idade atual + k - 1)
+                const idadeMorte = idadeAtual + k - 1;
+                const probMortePeriodo = probMorteMensal; // Usando a mesma probabilidade mensal para simplificar
+                
+                // Contribuição: Saldo Devedor × Prob. Sobrevivência × Prob. Morte × Fator Desconto
+                const contribuicao = saldoDevedor * probSobrevivencia * probMortePeriodo * fatorDesconto;
+                premioAnual += contribuicao;
+                
+                // Salvar detalhes ANTES de atualizar a probabilidade de sobrevivência
+                detalhes.push({
+                    mes: k,
+                    mes_absoluto: mesAtual,
+                    saldo_devedor: saldoDevedor,
+                    probabilidade_sobrevivencia: probSobrevivencia, // Valor CORRETO antes da atualização
+                    probabilidade_morte_anual: probMorteAnual,
+                    probabilidade_morte_mensal: probMorteMensal,
+                    probabilidade_morte_periodo: probMortePeriodo,
+                    fator_desconto: fatorDesconto,
+                    contribuicao: contribuicao
+                });
+                
+                // Atualizar probabilidade de sobrevivência para o próximo período
+                // IMPORTANTE: Atualizar DEPOIS de salvar os detalhes
+                probSobrevivencia *= (1 - probMorteMensal);
+            }
+
+            // Converter prêmio puro anual em prêmio mensal nivelado POSTECIPADO
+            // Fórmula correta: P_mensal = A_anual / ax:12
+            // Onde ax:12 = Σ(k=1 to 12) v^k × kPx (anuidade atuarial POSTECIPADA)
+            let premioMensal;
+            if (taxaMensal === 0) {
+                premioMensal = premioAnual / mesesCobertos;
+            } else {
+                // Calcular anuidade atuarial POSTECIPADA ax:12 = Σ(k=1 to 12) v^k × kPx
+                let anuidadeAtuarial = 0;
+                let probSobrevivenciaAnuidade = 1.0; // Probabilidade de sobreviver até o início (0Px = 100%)
+                
+                for (let k = 1; k <= mesesCobertos; k++) {
+                    const v = 1 / (1 + taxaMensal); // Fator de desconto
+                    const fatorDesconto = Math.pow(v, k);
+                    
+                    // Para anuidade POSTECIPADA: usar kPx (sobreviver k períodos completos)
+                    // kPx = k-1Px × (1 - qx+k-1) = probSobrevivenciaAnuidade × (1 - probMorteMensal)
+                    const probSobrevivenciaKPeriodos = probSobrevivenciaAnuidade * (1 - probMorteMensal);
+                    
+                    // Contribuição: v^k × kPx
+                    anuidadeAtuarial += fatorDesconto * probSobrevivenciaKPeriodos;
+                    
+                    // Atualizar probabilidade de sobrevivência para o próximo período
+                    probSobrevivenciaAnuidade *= (1 - probMorteMensal);
+                }
+                
+                // Prêmio mensal = Prêmio anual / Anuidade atuarial
+                premioMensal = premioAnual / anuidadeAtuarial;
+            }
+
+            const pmt = calcularPMT(valorInicial, taxaMensal, periodoTotal);
+            
+            // Calcular saldo devedor na parcela atual
+            const saldoDevedorAtual = calcularSaldoDevedor(valorInicial, taxaMensal, periodoTotal, parcelaAtual);
+            
+            // Taxa de risco anual = Prêmio Anual / Saldo Devedor Atual
+            const taxaRiscoAnual = (premioAnual / saldoDevedorAtual) * 100;
+            
+            // Taxa de risco mensal = Prêmio Mensal / Saldo Devedor Atual
+            const taxaRiscoMensal = (premioMensal / saldoDevedorAtual) * 100;
+            
+            return {
+                premio_anual: premioAnual,
+                premio_mensal: premioMensal,
+                taxa_risco_anual: taxaRiscoAnual,
+                taxa_risco_mensal: taxaRiscoMensal,
+                meses_cobertos: mesesCobertos,
+                idade_atual: idadeAtual,
+                saldo_devedor_atual: saldoDevedorAtual,
+                detalhes: detalhes,
+                pmt_financiamento: pmt,
+                taxa_mensal: taxaMensal,
+                prob_morte_anual: probMorteAnual,
+                prob_morte_mensal: probMorteMensal
+            };
+        }
+
+        function calculate() {
+            // Obter dados do formulário
+            const idadeMin = parseInt(document.getElementById('idade_min').value);
+            const idadeMax = parseInt(document.getElementById('idade_max').value);
+            const sexos = Array.from(document.querySelectorAll('input[name="sexo"]:checked')).map(cb => cb.value);
+            const parcelasMin = parseInt(document.getElementById('parcelas_min').value);
+            const parcelasMax = parseInt(document.getElementById('parcelas_max').value);
+            const taxaJuros = parseFloat(document.getElementById('taxa_juros').value);
+            const valorFinanciamentoStr = document.getElementById('valor_financiamento').value;
+            const valorFinanciamento = parseFloat(valorFinanciamentoStr.replace(/[^\d,]/g, '').replace(',', '.'));
+            const periodoTotal = parseInt(document.getElementById('periodo_total').value);
+            const tabuasValidas = Array.from(document.getElementById('tabuas_validas').selectedOptions).map(opt => opt.value);
+            const tabuasInvalidas = Array.from(document.getElementById('tabuas_invalidas').selectedOptions).map(opt => opt.value);
+
+            // Validação
+            if (idadeMin > idadeMax) {
+                alert('A idade mínima deve ser menor ou igual à idade máxima.');
+                return;
+            }
+
+            if (parcelasMin > parcelasMax) {
+                alert('As parcelas mínimas devem ser menores ou iguais às parcelas máximas.');
+                return;
+            }
+
+            if (sexos.length === 0) {
+                alert('Selecione pelo menos um sexo.');
+                return;
+            }
+
+            if (tabuasValidas.length === 0 && tabuasInvalidas.length === 0) {
+                alert('Selecione pelo menos uma tábua válida ou inválida.');
+                return;
+            }
+
+            if (taxaJuros < 0 || taxaJuros > 30) {
+                alert('A taxa de juros deve estar entre 0% e 30%.');
+                return;
+            }
+
+            if (isNaN(valorFinanciamento) || valorFinanciamento < 1 || valorFinanciamento > 500000) {
+                alert('O valor do financiamento deve estar entre R$ 1,00 e R$ 500.000,00.');
+                return;
+            }
+
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+            // Adicionar botão de cancelar
+            const loadingElement = document.getElementById('loading');
+            loadingElement.innerHTML = `
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Calculando...</span>
+                </div>
+                <p class="mt-2">Preparando cálculo...</p>
+                <button class="btn btn-danger btn-sm mt-2" id="btnCancelarCalculo">
+                    <i class="fas fa-stop me-1"></i>Cancelar Cálculo
+                </button>
+            `;
+            
+            // Adicionar evento de cancelar
+            document.getElementById('btnCancelarCalculo').addEventListener('click', function() {
+                window.calculoCancelado = true;
+                document.getElementById('loading').style.display = 'none';
+                alert('Cálculo cancelado pelo usuário.');
+            });
+            
+            // Enviar dados para o servidor Python
+            const data = {
+                idade_min: idadeMin,
+                idade_max: idadeMax,
+                sexos: sexos,
+                parcelas_min: parcelasMin,
+                parcelas_max: parcelasMax,
+                taxa_juros: taxaJuros,
+                valor_financiamento: valorFinanciamento,
+                periodo_total: periodoTotal,
+                tabuas_validas: tabuasValidas,
+                tabuas_invalidas: tabuasInvalidas
+            };
+
+            // Calcular localmente usando a função correta
+            calcularColetivoLocal(data);
+        }
+
+        // Cache global para probabilidades de morte
+        const cacheProbabilidades = new Map();
+        
+        // Função otimizada para obter probabilidade de morte com cache
+        async function obterProbabilidadeMorteCache(idade, sexo, tabua) {
+            const chave = `${idade}-${sexo}-${tabua}`;
+            
+            if (cacheProbabilidades.has(chave)) {
+                const cached = cacheProbabilidades.get(chave);
+                console.log(`CACHE HIT: ${chave} = ${cached}`);
+                return cached;
+            }
+            
+            console.log(`CACHE MISS: ${chave} - buscando do servidor`);
+            const probabilidade = await obterProbabilidadeMorte(idade, sexo, tabua);
+            console.log(`SERVIDOR RETORNOU: ${chave} = ${probabilidade}`);
+            cacheProbabilidades.set(chave, probabilidade);
+            return probabilidade;
+        }
+        
+        // Função otimizada para calcular prêmio anual (versão sem await desnecessário)
+        async function calcularPremioAnualPorIdadeOtimizada(idadeAtual, parcelaRestante, periodoTotal, taxaJurosAnual, valorInicial, sexo, tabua, tabuasCompletas = null) {
+            // Debug: log dos parâmetros
+            console.log(`DEBUG: idadeAtual=${idadeAtual}, parcelaRestante=${parcelaRestante}, periodoTotal=${periodoTotal}, taxaJurosAnual=${taxaJurosAnual}, valorInicial=${valorInicial}, sexo=${sexo}, tabua=${tabua}`);
+            
+            // Usar taxa efetiva mensal (como o Excel faz)
+            const taxaMensal = Math.pow(1 + taxaJurosAnual/100, 1/12) - 1;
+            
+            // Calcular a partir da parcela restante atual (sem truncamento)
+            // Se restam 36 parcelas de 36 total, está na parcela 1
+            const parcelaAtual = periodoTotal - parcelaRestante + 1;
+            const mesesRestantes = parcelaRestante;
+            const mesesCobertos = Math.min(12, mesesRestantes);
+            
+            console.log(`DEBUG: parcelaAtual=${parcelaAtual}, mesesRestantes=${mesesRestantes}, mesesCobertos=${mesesCobertos}, taxaMensal=${taxaMensal}`);
+            
+            // Obter probabilidade de morte anual da idade atual
+            let probMorteAnual;
+            if (tabuasCompletas) {
+                // Usar tábuas carregadas localmente
+                probMorteAnual = obterProbabilidadeMorteLocal(idadeAtual, sexo, tabua, tabuasCompletas);
+                console.log(`DEBUG QX_ANUAL LOCAL para idade ${idadeAtual}: ${probMorteAnual}`);
+            } else {
+                // Usar cache do servidor (fallback)
+                probMorteAnual = await obterProbabilidadeMorteCache(idadeAtual, sexo, tabua);
+                console.log(`DEBUG QX_ANUAL CACHE para idade ${idadeAtual}: ${probMorteAnual}`);
+            }
+            
+            // Converter probabilidade anual para mensal usando fórmula atuarial
+            const probMorteMensal = 1 - Math.pow(1 - probMorteAnual, 1/12);
+            console.log(`DEBUG PROB_MORTE_MENSAL para idade ${idadeAtual}: ${probMorteMensal}`);
+            
+            let premioAnual = 0;
+            
+            // Calcular prêmio puro para os próximos 12 meses usando a fórmula correta
+            let probSobrevivencia = 1.0; // Probabilidade de sobreviver até o início (k=1)
+            
+            for (let k = 1; k <= mesesCobertos; k++) {
+                const mesAtual = parcelaAtual + k - 1;
+                const saldoDevedor = calcularSaldoDevedor(valorInicial, taxaMensal, periodoTotal, mesAtual);
+                const fatorDesconto = Math.pow(1 / (1 + taxaMensal), k);
+                
+                // Probabilidade de morte no período k
+                const probMortePeriodo = probMorteMensal;
+                
+                // Contribuição: Saldo Devedor × Prob. Sobrevivência × Prob. Morte × Fator Desconto
+                const contribuicao = saldoDevedor * probSobrevivencia * probMortePeriodo * fatorDesconto;
+                premioAnual += contribuicao;
+                
+                // Atualizar probabilidade de sobrevivência para o próximo período
+                probSobrevivencia *= (1 - probMorteMensal);
+            }
+
+            // Converter prêmio puro anual em prêmio mensal nivelado POSTECIPADO
+            let premioMensal;
+            if (taxaMensal === 0) {
+                premioMensal = premioAnual / mesesCobertos;
+            } else {
+                // Calcular anuidade atuarial POSTECIPADA ax:12 = Σ(k=1 to 12) v^k × kPx
+                let anuidadeAtuarial = 0;
+                let probSobrevivenciaAnuidade = 1.0;
+                
+                for (let k = 1; k <= mesesCobertos; k++) {
+                    const v = 1 / (1 + taxaMensal);
+                    const fatorDesconto = Math.pow(v, k);
+                    const probSobrevivenciaKPeriodos = probSobrevivenciaAnuidade * (1 - probMorteMensal);
+                    anuidadeAtuarial += fatorDesconto * probSobrevivenciaKPeriodos;
+                    probSobrevivenciaAnuidade *= (1 - probMorteMensal);
+                }
+                
+                premioMensal = premioAnual / anuidadeAtuarial;
+            }
+
+            const pmt = calcularPMT(valorInicial, taxaMensal, periodoTotal);
+            const saldoDevedorAtual = calcularSaldoDevedor(valorInicial, taxaMensal, periodoTotal, parcelaAtual);
+            
+            // Taxa de risco anual = Prêmio Anual / Saldo Devedor Atual
+            const taxaRiscoAnual = (premioAnual / saldoDevedorAtual) * 100;
+            
+            // Taxa de risco mensal = Prêmio Mensal / Saldo Devedor Atual
+            const taxaRiscoMensal = (premioMensal / saldoDevedorAtual) * 100;
+            
+            console.log(`DEBUG RESULTADO: premio_anual=${premioAnual}, premio_mensal=${premioMensal}, taxa_risco_anual=${taxaRiscoAnual}, taxa_risco_mensal=${taxaRiscoMensal}, saldoDevedorAtual=${saldoDevedorAtual}`);
+            
+            return {
+                premio_anual: premioAnual,
+                premio_mensal: premioMensal,
+                taxa_risco_anual: taxaRiscoAnual,
+                taxa_risco_mensal: taxaRiscoMensal
+            };
+        }
+        
+        // Função para atualizar progresso
+        function atualizarProgresso(processadas, total) {
+            const progresso = Math.round((processadas / total) * 100);
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.innerHTML = `
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Calculando...</span>
+                    </div>
+                    <p class="mt-2">Calculando valores atuariais... ${progresso}% (${processadas}/${total})</p>
+                `;
+            }
+        }
+        
+        // Função para carregar todas as tábuas de mortalidade de uma vez
+        async function carregarTodasTabuas(tabuas, idadeMin, idadeMax, sexos) {
+            console.log('Carregando todas as tábuas de mortalidade...');
+            console.log('Tábuas solicitadas:', tabuas);
+            
+            // Usar dados internos das tábuas
+            const tabuasCompletas = new Map();
+            
+            try {
+                // Converter dados internos para o formato esperado
+                for (const tabua of tabuas) {
+                    if (TABUAS_MORTALIDADE[tabua]) {
+                        const dadosTabua = {};
+                        const dadosInternos = TABUAS_MORTALIDADE[tabua];
+                        
+                        // Converter dados para o formato esperado
+                        for (let idade = idadeMin; idade <= idadeMax; idade++) {
+                            if (dadosInternos.masculino[idade] !== undefined && dadosInternos.feminino[idade] !== undefined) {
+                                dadosTabua[idade] = {
+                                    qx_masc: dadosInternos.masculino[idade],
+                                    qx_fem: dadosInternos.feminino[idade]
+                                };
+                            }
+                        }
+                        
+                        if (Object.keys(dadosTabua).length > 0) {
+                            tabuasCompletas.set(tabua, dadosTabua);
+                        }
+                    }
+                }
+                
+                console.log(`Tábuas carregadas: ${Array.from(tabuasCompletas.keys()).join(', ')}`);
+                console.log(`Total de tábuas carregadas: ${tabuasCompletas.size}`);
+                
+                for (const [nomeTabua, dadosTabua] of tabuasCompletas) {
+                    const idades = Object.keys(dadosTabua).length;
+                    console.log(`Tábua ${nomeTabua}: ${idades} idades carregadas`);
+                }
+                
+                return tabuasCompletas;
+                
+            } catch (error) {
+                console.error('Erro ao carregar tábuas internas:', error);
+                return new Map();
+            }
+        }
+        
+        // Função para obter probabilidade de morte das tábuas carregadas
+        function obterProbabilidadeMorteLocal(idade, sexo, tabua, tabuasCompletas) {
+            if (!tabuasCompletas.has(tabua)) {
+                console.warn(`Tábua ${tabua} não encontrada no cache local`);
+                return 0.15; // Fallback
+            }
+            
+            const tabuaData = tabuasCompletas.get(tabua);
+            const colunaSexo = sexo === 'M' ? 'qx_masc' : 'qx_fem';
+            
+            if (!tabuaData || !tabuaData[idade] || tabuaData[idade][colunaSexo] === undefined) {
+                console.warn(`Dados não encontrados para idade ${idade}, sexo ${sexo}, tábua ${tabua}`);
+                return 0.15; // Fallback
+            }
+            
+            return tabuaData[idade][colunaSexo];
+        }
+        
+        // Função para obter probabilidade de morte usando dados internos
+        function obterProbabilidadeMorteInternaLocal(idade, sexo, tabua) {
+            if (!TABUAS_MORTALIDADE[tabua]) {
+                console.warn(`Tábua ${tabua} não encontrada nos dados internos`);
+                return 0.15; // Fallback
+            }
+            
+            const dadosTabua = TABUAS_MORTALIDADE[tabua];
+            const colunaSexo = sexo === 'M' ? 'masculino' : 'feminino';
+            
+            if (!dadosTabua[colunaSexo] || dadosTabua[colunaSexo][idade] === undefined) {
+                console.warn(`Dados não encontrados para idade ${idade}, sexo ${sexo}, tábua ${tabua}`);
+                return 0.15; // Fallback
+            }
+            
+            return dadosTabua[colunaSexo][idade];
+        }
+
+        // Função para calcular coletivo localmente usando a lógica correta e otimizada
+        async function calcularColetivoLocal(data) {
+            try {
+                // Resetar flag de cancelamento
+                window.calculoCancelado = false;
+                
+                // Limpar cache anterior
+                cacheProbabilidades.clear();
+                
+                const resultados = [];
+                const tabuasUtilizadas = new Set();
+                
+                // Calcular total de combinações para progresso
+                const totalIdades = data.idade_max - data.idade_min + 1;
+                const totalParcelas = data.parcelas_max - data.parcelas_min + 1;
+                const totalSexos = data.sexos.length;
+                const totalTabuas = data.tabuas_validas.length + data.tabuas_invalidas.length;
+                const totalCombinacoes = totalIdades * totalParcelas * totalSexos * totalTabuas;
+                
+                console.log(`Iniciando cálculo otimizado: ${totalCombinacoes} combinações`);
+                
+                // Usar dados internos das tábuas
+                const todasTabuas = [...data.tabuas_validas, ...data.tabuas_invalidas];
+                const tabuasCompletas = new Map();
+                
+                // Converter dados internos para o formato esperado
+                for (const tabua of todasTabuas) {
+                    if (TABUAS_MORTALIDADE[tabua]) {
+                        const dadosTabua = {};
+                        const dadosInternos = TABUAS_MORTALIDADE[tabua];
+                        
+                        // Converter dados para o formato esperado
+                        for (let idade = data.idade_min; idade <= data.idade_max; idade++) {
+                            if (dadosInternos.masculino[idade] !== undefined && dadosInternos.feminino[idade] !== undefined) {
+                                dadosTabua[idade] = {
+                                    qx_masc: dadosInternos.masculino[idade],
+                                    qx_fem: dadosInternos.feminino[idade]
+                                };
+                            }
+                        }
+                        
+                        if (Object.keys(dadosTabua).length > 0) {
+                            tabuasCompletas.set(tabua, dadosTabua);
+                        }
+                    }
+                }
+                
+                if (tabuasCompletas.size === 0) {
+                    throw new Error('Nenhuma tábua foi carregada com sucesso');
+                }
+                
+                console.log(`Tábuas carregadas: ${Array.from(tabuasCompletas.keys()).join(', ')}`);
+                
+                let combinacoesProcessadas = 0;
+                
+                // Processar todas as combinações em lotes paralelos
+                const BATCH_SIZE = 50; // Processar 50 cálculos por vez
+                const todasCombinacoes = [];
+                
+                // Gerar todas as combinações
+                for (const tabua of data.tabuas_validas) {
+                    tabuasUtilizadas.add(tabua);
+                    for (let idade = data.idade_min; idade <= data.idade_max; idade++) {
+                        for (const sexo of data.sexos) {
+                            for (let parcelasRestantes = data.parcelas_min; parcelasRestantes <= data.parcelas_max; parcelasRestantes++) {
+                                todasCombinacoes.push({
+                                    idade, sexo, parcelasRestantes, tabua, tipo: 'Válido'
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                for (const tabua of data.tabuas_invalidas) {
+                    tabuasUtilizadas.add(tabua);
+                    for (let idade = data.idade_min; idade <= data.idade_max; idade++) {
+                        for (const sexo of data.sexos) {
+                            for (let parcelasRestantes = data.parcelas_min; parcelasRestantes <= data.parcelas_max; parcelasRestantes++) {
+                                todasCombinacoes.push({
+                                    idade, sexo, parcelasRestantes, tabua, tipo: 'Inválido'
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Processar em lotes paralelos
+                for (let i = 0; i < todasCombinacoes.length; i += BATCH_SIZE) {
+                    // Verificar se foi cancelado
+                    if (window.calculoCancelado) {
+                        console.log('Cálculo cancelado pelo usuário');
+                        return;
+                    }
+                    
+                    const lote = todasCombinacoes.slice(i, i + BATCH_SIZE);
+                    
+                    // Processar lote em paralelo
+                    const promessasLote = lote.map(async (combinacao) => {
+                        try {
+                            const resultado = await calcularPremioAnualPorIdadeOtimizada(
+                                combinacao.idade,
+                                combinacao.parcelasRestantes,
+                                data.periodo_total,
+                                data.taxa_juros,
+                                data.valor_financiamento,
+                                combinacao.sexo,
+                                combinacao.tabua,
+                                tabuasCompletas
+                            );
+                            
+                            return {
+                                idade: combinacao.idade,
+                                sexo: combinacao.sexo,
+                                parcelas_restantes: combinacao.parcelasRestantes,
+                                tipo_tabua: combinacao.tipo,
+                                tabua: combinacao.tabua,
+                                premio_anual: resultado.premio_anual,
+                                premio_mensal: resultado.premio_mensal,
+                                taxa_risco_anual: resultado.taxa_risco_anual,
+                                taxa_risco_mensal: resultado.taxa_risco_mensal
+                            };
+                        } catch (error) {
+                            console.error(`Erro no cálculo para ${combinacao.idade}, ${combinacao.sexo}, ${combinacao.parcelasRestantes}, ${combinacao.tabua}:`, error);
+                            return null;
+                        }
+                    });
+                    
+                    // Aguardar lote atual
+                    const resultadosLote = await Promise.all(promessasLote);
+                    
+                    // Adicionar resultados válidos
+                    resultados.push(...resultadosLote.filter(r => r !== null));
+                    
+                    // Atualizar progresso
+                    combinacoesProcessadas += lote.length;
+                    atualizarProgresso(combinacoesProcessadas, totalCombinacoes);
+                    
+                    // Pequena pausa para não bloquear a UI
+                    await new Promise(resolve => setTimeout(resolve, 1));
+                }
+                
+                // Criar resultado no formato esperado
+                const result = {
+                    success: true,
+                    resultados: resultados,
+                    total_combinacoes: resultados.length,
+                    combinacoes_processadas: resultados.length,
+                    progresso: 100.0,
+                    idade_min: data.idade_min,
+                    idade_max: data.idade_max,
+                    parcelas_min: data.parcelas_min,
+                    parcelas_max: data.parcelas_max,
+                    tabuas_utilizadas: Array.from(tabuasUtilizadas)
+                };
+                
+                document.getElementById('loading').style.display = 'none';
+                displayResults(result);
+                
+                console.log(`Cálculo concluído: ${resultados.length} resultados processados`);
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                console.error('Erro no cálculo coletivo:', error);
+                alert('Erro no cálculo: ' + error.message);
+            }
+        }
+
+        // Variáveis globais para paginação
+        let allResults = [];
+        let currentPage = 0;
+        const RESULTS_PER_PAGE = 1000;
+
+        function displayResults(result) {
+            // Armazenar todos os resultados
+            allResults = result.resultados;
+            currentPage = 0;
+            
+            // Mostrar apenas os primeiros 1000 resultados
+            showResultsPage(0);
+            
+            // Mostrar seções de download e "mostrar mais"
+            document.getElementById('downloadSection').style.display = 'block';
+            document.getElementById('showMoreSection').style.display = 'block';
+            
+            // Atualizar informações
+            updateResultsInfo();
+
+            // Atualizar resumo
+            document.getElementById('totalCombinacoes').textContent = result.total_combinacoes;
+            document.getElementById('idadesAnalisadas').textContent = `${result.idade_min} a ${result.idade_max}`;
+            document.getElementById('parcelasAnalisadas').textContent = `${result.parcelas_min} a ${result.parcelas_max}`;
+            document.getElementById('tabuasUtilizadas').textContent = result.tabuas_utilizadas.join(', ');
+
+            // Mostrar seção de resultados
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('summaryInfo').style.display = 'block';
+            document.getElementById('resultsSection').classList.add('fade-in');
+            
+            // Armazenar resultados para download
+            window.currentResults = result;
+        }
+
+        function showResultsPage(page) {
+            const tbody = document.getElementById('resultsTableBody');
+            const startIndex = page * RESULTS_PER_PAGE;
+            const endIndex = Math.min(startIndex + RESULTS_PER_PAGE, allResults.length);
+            
+            // Se for a primeira página, limpar a tabela
+            if (page === 0) {
+                tbody.innerHTML = '';
+            }
+            
+            // Adicionar resultados da página atual
+            for (let i = startIndex; i < endIndex; i++) {
+                const item = allResults[i];
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.idade}</td>
+                    <td>${item.sexo === 'M' ? 'Masculino' : 'Feminino'}</td>
+                    <td>${item.parcelas_restantes}</td>
+                    <td><span class="badge ${item.tipo_tabua === 'Válido' ? 'bg-success' : 'bg-warning'}">${item.tipo_tabua}</span></td>
+                    <td>${item.tabua}</td>
+                    <td>R$ ${item.premio_anual.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td>R$ ${item.premio_mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td>${item.taxa_risco_anual.toFixed(5)}%</td>
+                    <td>${item.taxa_risco_mensal.toFixed(5)}%</td>
+                `;
+                tbody.appendChild(row);
+            }
+            
+            currentPage = page;
+            updateResultsInfo();
+        }
+
+        function showMoreResults() {
+            const nextPage = currentPage + 1;
+            const startIndex = nextPage * RESULTS_PER_PAGE;
+            
+            if (startIndex < allResults.length) {
+                showResultsPage(nextPage);
+            }
+        }
+
+        function updateResultsInfo() {
+            const totalResults = allResults.length;
+            const displayedResults = Math.min((currentPage + 1) * RESULTS_PER_PAGE, totalResults);
+            const hasMore = displayedResults < totalResults;
+            
+            document.getElementById('resultsInfo').textContent = 
+                `Mostrando ${displayedResults.toLocaleString('pt-BR')} de ${totalResults.toLocaleString('pt-BR')} resultados`;
+            
+            const showMoreBtn = document.getElementById('showMoreBtn');
+            if (hasMore) {
+                showMoreBtn.style.display = 'inline-block';
+                showMoreBtn.innerHTML = `<i class="fas fa-plus me-2"></i>Mostrar Mais Resultados (${(totalResults - displayedResults).toLocaleString('pt-BR')} restantes)`;
+            } else {
+                showMoreBtn.style.display = 'none';
+            }
+        }
+        
+        function downloadExcel() {
+            if (!window.currentResults) {
+                alert('Nenhum resultado disponível para download');
+                return;
+            }
+            
+            // Mostrar loading no botão
+            const btn = document.getElementById('downloadBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Gerando Excel...';
+            btn.disabled = true;
+            
+            fetch('/download_excel_postalis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(window.currentResults)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao gerar arquivo Excel');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Criar link de download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'resultados_seguro_prestamista_coletivo.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                alert('Erro ao baixar arquivo: ' + error.message);
+            })
+            .finally(() => {
+                // Restaurar botão
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+        
+    </script>
+</body>
+</html>

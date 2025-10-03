@@ -1,0 +1,60 @@
+# Arquivos temporários
+*.tmp
+*.temp
+*.log
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de backup
+*.bak
+*.backup
+
+# Arquivos de desenvolvimento
+node_modules/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Arquivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos de build (não necessário para Netlify)
+dist/
+build/
+
+# Arquivos Python (não necessário para Netlify)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Arquivos de servidor (não necessário para Netlify)
+servidor_web.py
+servidor_teste.py
+*.py
+
+# Arquivos CSV (dados já estão em JS)
+*.csv
+
+# Arquivos de teste
+teste_*
+*_teste.*
+
+# Arquivos antigos
+calculadora_prestamista.html
+calculadora_prestamista_alt.html
+calculadora_individual.html
+calculadora_coletiva.html
+index.html
+

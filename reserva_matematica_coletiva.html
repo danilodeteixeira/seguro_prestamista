@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cálculo Reserva Matemática Coletivo - Seguro Prestamista</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            padding: 30px;
+            max-width: 1400px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+        
+        .upload-area {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            background: #667eea;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .file-label:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .file-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e8f4fd;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .config-section {
+            background: #fff;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+
+        .preview-section {
+            background: #fff;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+        }
+
+        .preview-table {
+            margin-bottom: 25px;
+        }
+
+        .preview-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .config-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-calculate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-calculate:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .results-title {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        .summary-card h4 {
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+        
+        .summary-card .value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 10px;
+            font-weight: 600;
+        }
+        
+        .table tbody td {
+            padding: 12px 10px;
+            vertical-align: middle;
+            border-color: #e9ecef;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .pagination-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .btn-download {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-download:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        
+        .btn-load-more {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-load-more:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+        
+        .preview-table {
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .preview-title {
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .loading i {
+            font-size: 2em;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+            margin: 20px 0;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            margin: 20px 0;
+        }
+
+        /* Estilos para barra de progresso */
+        .progress-container {
+            margin-top: 10px;
+            display: none;
+        }
+
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+        }
+
+        .progress-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.9em;
+            color: #667eea;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        /* Estilos para modal de preview */
+        .modal-preview {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content-preview {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 80vh;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header-preview {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header-preview h4 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .close-preview {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-preview:hover {
+            background-color: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .modal-body-preview {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .preview-table-modal {
+            margin: 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .preview-table-modal .table {
+            margin-bottom: 0;
+        }
+
+        .preview-table-modal .table thead th {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 10px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .preview-table-modal .table tbody td {
+            padding: 12px 10px;
+            vertical-align: middle;
+            border-color: #e9ecef;
+        }
+
+        .preview-table-modal .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header">
+                <h1><i class="fas fa-users me-3"></i>Cálculo Reserva Matemática Coletivo</h1>
+                <p>Calcule a reserva matemática para múltiplos empréstimos simultaneamente</p>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h3 class="config-title"><i class="fas fa-upload me-2"></i>Upload de Planilhas</h3>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="upload-area">
+                            <div class="upload-icon">
+                                <i class="fas fa-file-excel"></i>
+                            </div>
+                            <h5>Planilha de Taxas de Risco</h5>
+                            <p class="text-muted">Arquivo XLSX com as taxas de risco por idade, sexo e parcelas</p>
+                            <input type="file" id="taxasFile" class="file-input" accept=".xlsx">
+                            <label for="taxasFile" class="file-label">
+                                <i class="fas fa-upload me-2"></i>Selecionar Arquivo
+                            </label>
+                            <div id="taxasInfo" class="file-info" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="upload-area">
+                            <div class="upload-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <h5>Base de Dados de Empréstimos</h5>
+                            <p class="text-muted">Arquivo XLSX com os dados dos empréstimos (saldo, prazo, idade, sexo)</p>
+                            <input type="file" id="emprestimosFile" class="file-input" accept=".xlsx">
+                            <label for="emprestimosFile" class="file-label">
+                                <i class="fas fa-upload me-2"></i>Selecionar Arquivo
+                            </label>
+                            <div id="emprestimosInfo" class="file-info" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview das Planilhas -->
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <h3 class="config-title"><i class="fas fa-eye me-2"></i>Preview das Planilhas</h3>
+                
+                <!-- Preview Planilha de Taxas -->
+                <div class="preview-table" id="previewTaxas" style="display: none;">
+                    <h5 class="preview-title">📊 Planilha de Taxas de Risco - Primeiras 10 linhas</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead class="table-dark">
+                                <tr id="taxasHeader">
+                                    <!-- Será preenchido via JavaScript -->
+                                </tr>
+                            </thead>
+                            <tbody id="taxasBody">
+                                <!-- Será preenchido via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Preview Planilha de Empréstimos -->
+                <div class="preview-table" id="previewEmprestimos" style="display: none;">
+                    <h5 class="preview-title">📋 Base de Dados de Empréstimos - Primeiras 10 linhas</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead class="table-dark">
+                                <tr id="emprestimosHeader">
+                                    <!-- Será preenchido via JavaScript -->
+                                </tr>
+                            </thead>
+                            <tbody id="emprestimosBody">
+                                <!-- Será preenchido via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Section -->
+            <div class="config-section">
+                <h3 class="config-title"><i class="fas fa-cog me-2"></i>Configurações</h3>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="taxaJuros" class="form-label">Taxa de Juros Anual (%)</label>
+                            <input type="number" class="form-control" id="taxaJuros" step="0.01" min="0" max="100" value="6.5">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="tabuaValidos" class="form-label">Tábua de Mortalidade - Válidos</label>
+                            <select class="form-select" id="tabuaValidos">
+                                <option value="">Carregando tábuas...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="tabuaInvalidos" class="form-label">Tábua de Mortalidade - Inválidos</label>
+                            <select class="form-select" id="tabuaInvalidos">
+                                <option value="">Carregando tábuas...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-calculate" id="calculateBtn" disabled>
+                    <i class="fas fa-calculator me-2"></i>Calcular Reservas Matemáticas
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <h3 class="results-title"><i class="fas fa-chart-bar me-2"></i>Resultados</h3>
+                
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <h4>VABF Total</h4>
+                        <div class="value" id="vabfTotal">R$ 0,00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>VACF Total</h4>
+                        <div class="value" id="vacfTotal">R$ 0,00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Reserva Total</h4>
+                        <div class="value" id="reservaTotal">R$ 0,00</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Empréstimos Processados</h4>
+                        <div class="value" id="totalProcessados">0</div>
+                    </div>
+                </div>
+                
+                <!-- Download Button -->
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-download" id="downloadBtn" style="display: none;">
+                        <i class="fas fa-download me-2"></i>Download Planilha com Resultados
+                    </button>
+                </div>
+                
+                <!-- Results Table -->
+                <div class="table-container">
+                    <table class="table table-striped" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Saldo Adimplente</th>
+                                <th>Prazo Restante</th>
+                                <th>Idade</th>
+                                <th>Sexo</th>
+                                <th>VABF</th>
+                                <th>VACF</th>
+                                <th>Reserva Matemática</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination-section">
+                    <div>
+                        <span id="paginationInfo">Mostrando 0 de 0 resultados</span>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-load-more" id="loadMoreBtn" style="display: none;">
+                            <i class="fas fa-plus me-2"></i>Carregar Mais 1000
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Preview -->
+    <div id="modalPreview" class="modal-preview">
+        <div class="modal-content-preview">
+            <div class="modal-header-preview">
+                <h4 id="modalPreviewTitle">Pré-visualização</h4>
+                <button class="close-preview" id="closePreview">&times;</button>
+            </div>
+            <div class="modal-body-preview">
+                <div class="preview-table-modal">
+                    <table class="table table-striped table-sm" id="modalPreviewTable">
+                        <thead class="table-dark">
+                            <tr id="modalPreviewHeader">
+                                <!-- Será preenchido via JavaScript -->
+                            </tr>
+                        </thead>
+                        <tbody id="modalPreviewBody">
+                            <!-- Será preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="tabuas_mortalidade.js"></script>
+    <script>
+        // Variáveis globais
+        let taxasFile = null;
+        let emprestimosFile = null;
+        let resultados = [];
+        let currentPage = 0;
+        const ITEMS_PER_PAGE = 1000;
+
+        // Carregar tábuas de mortalidade
+        function carregarTabuas() {
+            if (typeof window.TABUAS_MORTALIDADE !== 'undefined') {
+                const tabuas = Object.keys(window.TABUAS_MORTALIDADE);
+                const selectValidos = document.getElementById('tabuaValidos');
+                const selectInvalidos = document.getElementById('tabuaInvalidos');
+                
+                selectValidos.innerHTML = '<option value="">Selecione uma tábua...</option>';
+                selectInvalidos.innerHTML = '<option value="">Selecione uma tábua...</option>';
+                
+                tabuas.forEach(tabua => {
+                    if (tabua !== 'Nenhuma') {
+                        const option1 = new Option(tabua, tabua);
+                        const option2 = new Option(tabua, tabua);
+                        selectValidos.add(option1);
+                        selectInvalidos.add(option2);
+                    }
+                });
+            } else {
+                setTimeout(carregarTabuas, 100);
+            }
+        }
+
+        // Event listeners para upload de arquivos
+        document.getElementById('taxasFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                taxasFile = file;
+                document.getElementById('taxasInfo').innerHTML = `
+                    <strong>Arquivo selecionado:</strong> ${file.name}<br>
+                    <strong>Tamanho:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                    <div class="progress-container" id="progressTaxas">
+                        <div class="progress">
+                            <div class="progress-bar" id="progressBarTaxas" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-text" id="progressTextTaxas">Carregando...</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="previewTaxasBtn" disabled>
+                        <i class="fas fa-eye me-1"></i>Mostrar Pré-visualização
+                    </button>
+                `;
+                document.getElementById('taxasInfo').style.display = 'block';
+                document.getElementById('progressTaxas').style.display = 'block';
+                
+                // Carregar dados da planilha imediatamente
+                carregarDadosTaxas(file);
+                verificarFormulario();
+            }
+        });
+
+        document.getElementById('emprestimosFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                emprestimosFile = file;
+                document.getElementById('emprestimosInfo').innerHTML = `
+                    <strong>Arquivo selecionado:</strong> ${file.name}<br>
+                    <strong>Tamanho:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                    <div class="progress-container" id="progressEmprestimos">
+                        <div class="progress">
+                            <div class="progress-bar" id="progressBarEmprestimos" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-text" id="progressTextEmprestimos">Carregando...</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="previewEmprestimosBtn" disabled>
+                        <i class="fas fa-eye me-1"></i>Mostrar Pré-visualização
+                    </button>
+                `;
+                document.getElementById('emprestimosInfo').style.display = 'block';
+                document.getElementById('progressEmprestimos').style.display = 'block';
+                
+                // Carregar dados da planilha imediatamente
+                carregarDadosEmprestimos(file);
+                verificarFormulario();
+            }
+        });
+
+        // Variáveis para armazenar dados carregados
+        let dadosTaxas = null;
+        let dadosEmprestimos = null;
+
+        // Função para carregar dados da planilha de taxas
+        function carregarDadosTaxas(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'taxas');
+            
+            // Simular progresso
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                document.getElementById('progressBarTaxas').style.width = progress + '%';
+                document.getElementById('progressTextTaxas').textContent = `Carregando... ${Math.round(progress)}%`;
+            }, 200);
+            
+            fetch('/preview_planilha', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                document.getElementById('progressBarTaxas').style.width = '100%';
+                document.getElementById('progressTextTaxas').textContent = 'Carregado com sucesso!';
+                
+                if (data.success) {
+                    dadosTaxas = { colunas: data.colunas, dados: data.dados };
+                    console.log('Dados de taxas carregados com sucesso');
+                    
+                    // Habilitar botão de preview
+                    setTimeout(() => {
+                        document.getElementById('previewTaxasBtn').disabled = false;
+                        document.getElementById('progressTaxas').style.display = 'none';
+                    }, 1000);
+                } else {
+                    console.error('Erro ao carregar arquivo de taxas:', data.error);
+                    document.getElementById('progressTextTaxas').textContent = 'Erro ao carregar arquivo';
+                    document.getElementById('progressTextTaxas').style.color = '#dc3545';
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                console.error('Erro ao carregar arquivo de taxas:', error);
+                document.getElementById('progressTextTaxas').textContent = 'Erro ao carregar arquivo';
+                document.getElementById('progressTextTaxas').style.color = '#dc3545';
+            });
+        }
+
+        // Função para carregar dados da planilha de empréstimos
+        function carregarDadosEmprestimos(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'emprestimos');
+            
+            // Simular progresso
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                document.getElementById('progressBarEmprestimos').style.width = progress + '%';
+                document.getElementById('progressTextEmprestimos').textContent = `Carregando... ${Math.round(progress)}%`;
+            }, 200);
+            
+            fetch('/preview_planilha', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                document.getElementById('progressBarEmprestimos').style.width = '100%';
+                document.getElementById('progressTextEmprestimos').textContent = 'Carregado com sucesso!';
+                
+                if (data.success) {
+                    dadosEmprestimos = { colunas: data.colunas, dados: data.dados };
+                    console.log('Dados de empréstimos carregados com sucesso');
+                    
+                    // Habilitar botão de preview
+                    setTimeout(() => {
+                        document.getElementById('previewEmprestimosBtn').disabled = false;
+                        document.getElementById('progressEmprestimos').style.display = 'none';
+                    }, 1000);
+                } else {
+                    console.error('Erro ao carregar arquivo de empréstimos:', data.error);
+                    document.getElementById('progressTextEmprestimos').textContent = 'Erro ao carregar arquivo';
+                    document.getElementById('progressTextEmprestimos').style.color = '#dc3545';
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                console.error('Erro ao carregar arquivo de empréstimos:', error);
+                document.getElementById('progressTextEmprestimos').textContent = 'Erro ao carregar arquivo';
+                document.getElementById('progressTextEmprestimos').style.color = '#dc3545';
+            });
+        }
+
+        // Função para processar preview da planilha de taxas
+        function processarPreviewTaxas() {
+            if (!dadosTaxas) {
+                alert('Dados de taxas não foram carregados. Por favor, selecione o arquivo novamente.');
+                return;
+            }
+            exibirPreviewModal('Planilha de Taxas de Risco', dadosTaxas.colunas, dadosTaxas.dados);
+        }
+
+        // Função para processar preview da planilha de empréstimos
+        function processarPreviewEmprestimos() {
+            if (!dadosEmprestimos) {
+                alert('Dados de empréstimos não foram carregados. Por favor, selecione o arquivo novamente.');
+                return;
+            }
+            exibirPreviewModal('Base de Dados de Empréstimos', dadosEmprestimos.colunas, dadosEmprestimos.dados);
+        }
+
+        // Função para exibir preview no modal
+        function exibirPreviewModal(titulo, colunas, dados) {
+            // Atualizar título do modal
+            document.getElementById('modalPreviewTitle').textContent = `📊 ${titulo} - Primeiras 10 linhas`;
+            
+            // Limpar conteúdo anterior
+            const header = document.getElementById('modalPreviewHeader');
+            const body = document.getElementById('modalPreviewBody');
+            
+            // Cabeçalho
+            header.innerHTML = '';
+            colunas.forEach(coluna => {
+                const th = document.createElement('th');
+                th.textContent = coluna;
+                header.appendChild(th);
+            });
+            
+            // Dados (apenas as primeiras 10 linhas)
+            body.innerHTML = '';
+            const dadosLimitados = dados.slice(0, 10);
+            dadosLimitados.forEach((linha, index) => {
+                const tr = document.createElement('tr');
+                linha.forEach(celula => {
+                    const td = document.createElement('td');
+                    td.textContent = celula || '';
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+            
+            // Mostrar modal
+            document.getElementById('modalPreview').style.display = 'block';
+        }
+
+        // Função para exibir preview da planilha de taxas
+        function exibirPreviewTaxas(colunas, dados) {
+            const header = document.getElementById('taxasHeader');
+            const body = document.getElementById('taxasBody');
+            
+            // Cabeçalho
+            header.innerHTML = '';
+            colunas.forEach(coluna => {
+                const th = document.createElement('th');
+                th.textContent = coluna;
+                header.appendChild(th);
+            });
+            
+            // Dados
+            body.innerHTML = '';
+            dados.forEach((linha, index) => {
+                const tr = document.createElement('tr');
+                linha.forEach(celula => {
+                    const td = document.createElement('td');
+                    td.textContent = celula || '';
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+            
+            // Mostrar seção de preview
+            document.getElementById('previewTaxas').style.display = 'block';
+            document.getElementById('previewSection').style.display = 'block';
+        }
+
+        // Função para exibir preview da planilha de empréstimos
+        function exibirPreviewEmprestimos(colunas, dados) {
+            const header = document.getElementById('emprestimosHeader');
+            const body = document.getElementById('emprestimosBody');
+            
+            // Cabeçalho
+            header.innerHTML = '';
+            colunas.forEach(coluna => {
+                const th = document.createElement('th');
+                th.textContent = coluna;
+                header.appendChild(th);
+            });
+            
+            // Dados
+            body.innerHTML = '';
+            dados.forEach((linha, index) => {
+                const tr = document.createElement('tr');
+                linha.forEach(celula => {
+                    const td = document.createElement('td');
+                    td.textContent = celula || '';
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+            
+            // Mostrar seção de preview
+            document.getElementById('previewEmprestimos').style.display = 'block';
+            document.getElementById('previewSection').style.display = 'block';
+        }
+
+        // Verificar se o formulário está completo
+        function verificarFormulario() {
+            const taxaJuros = document.getElementById('taxaJuros').value;
+            const tabuaValidos = document.getElementById('tabuaValidos').value;
+            const tabuaInvalidos = document.getElementById('tabuaInvalidos').value;
+            
+            const isComplete = taxasFile && emprestimosFile && taxaJuros && tabuaValidos && tabuaInvalidos;
+            document.getElementById('calculateBtn').disabled = !isComplete;
+        }
+
+        // Event listeners para campos de configuração
+        document.getElementById('taxaJuros').addEventListener('input', verificarFormulario);
+        document.getElementById('tabuaValidos').addEventListener('change', verificarFormulario);
+        document.getElementById('tabuaInvalidos').addEventListener('change', verificarFormulario);
+
+        // Calcular reservas matemáticas
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            if (!taxasFile || !emprestimosFile) {
+                alert('Por favor, selecione ambos os arquivos.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('taxas_file', taxasFile);
+            formData.append('emprestimos_file', emprestimosFile);
+            formData.append('taxa_juros', document.getElementById('taxaJuros').value);
+            formData.append('tabua_validos', document.getElementById('tabuaValidos').value);
+            formData.append('tabua_invalidos', document.getElementById('tabuaInvalidos').value);
+
+            // Mostrar loading
+            document.getElementById('calculateBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculando...';
+            document.getElementById('calculateBtn').disabled = true;
+
+            fetch('/calcular_reserva_matematica_coletiva', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultados = data.resultados || [];
+                    exibirResultados();
+                    document.getElementById('resultsSection').style.display = 'block';
+                    document.getElementById('downloadBtn').style.display = 'inline-block';
+                } else {
+                    alert('Erro no cálculo: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao processar a solicitação. Tente novamente.');
+            })
+            .finally(() => {
+                document.getElementById('calculateBtn').innerHTML = '<i class="fas fa-calculator me-2"></i>Calcular Reservas Matemáticas';
+                document.getElementById('calculateBtn').disabled = false;
+            });
+        });
+
+        // Exibir resultados
+        function exibirResultados() {
+            if (resultados.length === 0) {
+                document.getElementById('resultsTableBody').innerHTML = '<tr><td colspan="8" class="text-center">Nenhum resultado encontrado</td></tr>';
+                return;
+            }
+
+            // Calcular totais
+            const vabfTotal = resultados.reduce((sum, r) => sum + (r.vabf || 0), 0);
+            const vacfTotal = resultados.reduce((sum, r) => sum + (r.vacf || 0), 0);
+            const reservaTotal = vabfTotal - vacfTotal;
+
+            document.getElementById('vabfTotal').textContent = 'R$ ' + vabfTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('vacfTotal').textContent = 'R$ ' + vacfTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('reservaTotal').textContent = 'R$ ' + reservaTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+            document.getElementById('totalProcessados').textContent = resultados.length;
+
+            // Exibir primeira página
+            currentPage = 0;
+            exibirPagina();
+        }
+
+        // Exibir página atual
+        function exibirPagina() {
+            const startIndex = currentPage * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, resultados.length);
+            const pageResults = resultados.slice(startIndex, endIndex);
+
+            let html = '';
+            pageResults.forEach((resultado, index) => {
+                const globalIndex = startIndex + index + 1;
+                html += `
+                    <tr>
+                        <td>${globalIndex}</td>
+                        <td>R$ ${(resultado.saldo_adimplente || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>${resultado.prazo_restante || 0}</td>
+                        <td>${resultado.idade || 0}</td>
+                        <td>${resultado.sexo || ''}</td>
+                        <td>R$ ${(resultado.vabf || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${(resultado.vacf || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        <td>R$ ${((resultado.vabf || 0) - (resultado.vacf || 0)).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('resultsTableBody').innerHTML = html;
+            
+            // Atualizar informações de paginação
+            document.getElementById('paginationInfo').textContent = 
+                `Mostrando ${startIndex + 1} a ${endIndex} de ${resultados.length} resultados`;
+            
+            // Mostrar/ocultar botão "Carregar Mais"
+            const hasMore = endIndex < resultados.length;
+            document.getElementById('loadMoreBtn').style.display = hasMore ? 'inline-block' : 'none';
+        }
+
+        // Carregar mais resultados
+        document.getElementById('loadMoreBtn').addEventListener('click', function() {
+            currentPage++;
+            exibirPagina();
+        });
+
+        // Download da planilha
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (resultados.length === 0) {
+                alert('Nenhum resultado para download.');
+                return;
+            }
+
+            // Criar CSV
+            let csv = 'Saldo Adimplente,Prazo Restante,Idade,Sexo,VABF,VACF,Reserva Matemática\n';
+            resultados.forEach(resultado => {
+                const reserva = (resultado.vabf || 0) - (resultado.vacf || 0);
+                csv += `${resultado.saldo_adimplente || 0},${resultado.prazo_restante || 0},${resultado.idade || 0},${resultado.sexo || ''},${resultado.vabf || 0},${resultado.vacf || 0},${reserva}\n`;
+            });
+
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'reservas_matematicas_coletivas.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // Adicionar event listeners para botões de preview e modal
+        function adicionarEventListenersPreview() {
+            // Event listener para botão de preview de taxas
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'previewTaxasBtn') {
+                    processarPreviewTaxas();
+                }
+            });
+
+            // Event listener para botão de preview de empréstimos
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'previewEmprestimosBtn') {
+                    processarPreviewEmprestimos();
+                }
+            });
+
+            // Event listener para fechar modal
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'closePreview') {
+                    fecharModalPreview();
+                }
+            });
+
+            // Event listener para fechar modal clicando fora dele
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'modalPreview') {
+                    fecharModalPreview();
+                }
+            });
+
+            // Event listener para fechar modal com ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('modalPreview').style.display === 'block') {
+                    fecharModalPreview();
+                }
+            });
+        }
+
+        // Função para fechar modal
+        function fecharModalPreview() {
+            document.getElementById('modalPreview').style.display = 'none';
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarTabuas();
+            adicionarEventListenersPreview();
+        });
+    </script>
+</body>
+</html>
